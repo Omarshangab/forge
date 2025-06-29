@@ -1,36 +1,20 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+COLORS
+ accent: "#8200DB",
+        primary: "#000000",
+        secondary: "#ffffff",
 
-## Getting Started
+Welvome to Forge.
 
-First, run the development server:
+Now this mobile app is gonna be used for tracking habits, ive noticed that when i want to stay consistent with an action or task im more successful at it when i can visual see a streak. 
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+for example i used to never work out consistently, then i downloaded this mobile app call ladder, it has this function where you have to do 3 workouts in a week in order for it to count to your weekly streak, noce you complete a workout one of the 3 bars gets filled out showing how much more workouts you have left for the week so you can get that week streak number to increase by one. this gave me a huge sense of progress every day i worked out because you cant tell the progress on your body quite yet but seeing that bar getting filled out bringing you that much closer to the goal of 3 workouts a week is very fullfiling. and then once you've completed those 3 workouts it increased your weekly streak and every time you log on to the app you can see it. so far because of this app i have worked out 3 day every week for the last 42 weeks and im happy everytime i look in the mirror.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+that was an example but it goes to show me how powerful tracking your habits counts are. thus the reason i want to build forge.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Now as far as project ive already built out my styling with tailwindcss. but if we need a backend lets use firebase, as its the one im most familiar with.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Alright for the coldblitz section, let me tell you what it is first. its basically a challenge that you do a certain habit for 21 days straight. and at the end of the 21 days if you complete it you get a reward that you choosed at the begin of the challenge. on of the biggest thing is the ability to see that daily streak go up and gain a sense of progress. i want you to recreate this better than how i described but withh the same underlying principle. if you need to use a backend let me know so we can set up firebase.
 
-## Learn More
+We’ll use javascript for language, react/next.js. and I’ll be using Vercel to host. 
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Lets also use tailswindcss and daisyus for styling.
