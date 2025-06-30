@@ -156,7 +156,41 @@ export const useDatabase = () => {
       // Include today's completion in the calculation
       const allCompletions = [...existingCompletions, todayString];
       
-      // Go backwards week by week, counting consecutive weeks that meet the goal
+      console.log('🔍 Streak calculation debug:');
+      console.log('Habit:', habit.name);
+      console.log('Weekly goal:', habit.weeklyGoal);
+      console.log('Today:', today.toLocaleDateString());
+      console.log('All completions:', allCompletions.slice(-10)); // Show last 10 for brevity
+      console.log('Current streak before calculation:', habit.currentStreak);
+      
+      // Calculate current week start and end
+      const currentWeekStart = new Date(today);
+      currentWeekStart.setDate(today.getDate() - today.getDay()); // Sunday
+      const currentWeekEnd = new Date(currentWeekStart);
+      currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Saturday
+      
+      // Count completions in current week (including today's completion)
+      const currentWeekCompletions = allCompletions.filter(date => {
+        let recordDate;
+        if (date && typeof date === 'object' && date.seconds) {
+          recordDate = new Date(date.seconds * 1000);
+        } else {
+          recordDate = new Date(date);
+        }
+        return recordDate >= currentWeekStart && recordDate <= currentWeekEnd;
+      }).length;
+      
+      console.log(`Current week (${currentWeekStart.toLocaleDateString()} - ${currentWeekEnd.toLocaleDateString()}): ${currentWeekCompletions}/${habit.weeklyGoal} completions`);
+      
+      // If current week already meets the goal, count it towards streak
+      if (currentWeekCompletions >= habit.weeklyGoal) {
+        weekStreak = 1;
+        console.log('✅ Current week goal already met! Starting streak at 1');
+      }
+      
+      // Now go backwards through previous completed weeks
+      currentWeekDate.setDate(currentWeekDate.getDate() - 7); // Start from previous week
+      
       while (currentWeekDate >= habitStartDate) {
         const weekStart = new Date(currentWeekDate);
         weekStart.setDate(currentWeekDate.getDate() - currentWeekDate.getDay()); // Sunday
@@ -174,16 +208,32 @@ export const useDatabase = () => {
           return recordDate >= weekStart && recordDate <= weekEnd;
         }).length;
         
-        // Check if this week meets the weekly goal
+        console.log(`Previous week ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}: ${weekCompletions} completions (goal: ${habit.weeklyGoal})`);
+        
+        // Check if this completed week met the weekly goal
         if (weekCompletions >= habit.weeklyGoal) {
           weekStreak++;
+          console.log(`✅ Previous week goal met! Streak: ${weekStreak}`);
         } else {
+          console.log(`❌ Previous week goal not met (${weekCompletions}/${habit.weeklyGoal}). Breaking streak at ${weekStreak}`);
           break; // Streak broken
         }
         
         // Move to previous week
         currentWeekDate.setDate(currentWeekDate.getDate() - 7);
       }
+      
+      // Special case: if current week doesn't meet goal yet but we have no previous streak,
+      // and this is the first completion, don't reset to 0 - keep building current week
+      if (weekStreak === 0 && currentWeekCompletions > 0 && currentWeekCompletions < habit.weeklyGoal) {
+        // Check if we had a streak before - if so, maintain it until week is complete
+        if (habit.currentStreak > 0) {
+          weekStreak = habit.currentStreak;
+          console.log(`🔄 Maintaining existing streak of ${weekStreak} while building current week (${currentWeekCompletions}/${habit.weeklyGoal})`);
+        }
+      }
+      
+      console.log('Final calculated streak:', weekStreak);
       
       // Add today's completion date
       const updatedCompletionDates = [...existingCompletions, todayString];
