@@ -22,17 +22,17 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="glass rounded-3xl p-8 shadow-premium">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto"></div>
-          <p className="text-center text-slate-600 mt-4 font-semibold">Loading...</p>
+          <p className="text-center text-slate-600 dark:text-slate-400 mt-4 font-semibold">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4">
       {/* Background decorations */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
@@ -51,43 +51,43 @@ export default function LoginPage() {
               height={80}
               className="w-20 h-20 object-contain mx-auto mb-4 float-animation"
             />
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
               Welcome to Forge
             </h1>
-            <p className="text-slate-600 text-lg">
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
               Build lasting habits and complete challenges
             </p>
           </div>
 
           {/* Features showcase */}
           <div className="mb-8 space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center">
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-700 rounded-xl flex items-center justify-center">
                 <span className="text-lg">📊</span>
               </div>
               <div className="text-left">
-                <h3 className="font-semibold text-slate-900">Weekly Habits</h3>
-                <p className="text-sm text-slate-600">Track your progress week by week</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Weekly Habits</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Track your progress week by week</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl flex items-center justify-center">
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-800 dark:to-orange-700 rounded-xl flex items-center justify-center">
                 <span className="text-lg">🔥</span>
               </div>
               <div className="text-left">
-                <h3 className="font-semibold text-slate-900">21-Day Challenges</h3>
-                <p className="text-sm text-slate-600">Complete Coldblitz challenges with rewards</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">21-Day Challenges</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Complete Coldblitz challenges with rewards</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center">
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-800 dark:to-green-700 rounded-xl flex items-center justify-center">
                 <span className="text-lg">🏆</span>
               </div>
               <div className="text-left">
-                <h3 className="font-semibold text-slate-900">Visual Progress</h3>
-                <p className="text-sm text-slate-600">See your streaks and achievements</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Visual Progress</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">See your streaks and achievements</p>
               </div>
             </div>
           </div>
@@ -116,10 +116,10 @@ export default function LoginPage() {
           </button>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm text-slate-500">
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               By signing in, you agree to our{' '}
-              <span className="text-purple-600 font-semibold">Terms of Service</span>
+              <span className="text-purple-600 dark:text-purple-400 font-semibold">Terms of Service</span>
             </p>
           </div>
         </div>

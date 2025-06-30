@@ -1,44 +1,21 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext({});
 
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
-
   useEffect(() => {
-    // Check for saved theme preference or default to light mode
-    const savedTheme = localStorage.getItem('forge-theme');
-    if (savedTheme) {
-      setIsDark(savedTheme === 'dark');
-    } else {
-      // Check system preference
-      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
+    // Always set to dark theme
+    document.documentElement.setAttribute('data-theme', 'forge-dark');
+    document.documentElement.classList.add('dark');
   }, []);
 
-  useEffect(() => {
-    // Apply theme to document
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    // Save preference
-    localStorage.setItem('forge-theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-  };
-
   const value = {
-    isDark,
-    toggleTheme
+    isDark: true,
+    // Remove toggleTheme function since we don't need it
   };
 
   return (

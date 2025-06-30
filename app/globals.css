@@ -342,6 +342,18 @@ input:focus-visible {
   transform: translateY(0px);
 }
 
+/* Dark mode support for outline button */
+.dark .btn-outline-forge {
+  background: rgba(15, 23, 42, 0.9);
+  color: #a855f7;
+  border-color: #a855f7;
+}
+
+.dark .btn-outline-forge:hover {
+  background: #a855f7;
+  color: white;
+}
+
 /* Ghost Button */
 .btn-ghost-forge {
   background: transparent;
@@ -353,6 +365,17 @@ input:focus-visible {
   background: rgba(107, 114, 128, 0.1);
   color: #374151;
   border-color: rgba(107, 114, 128, 0.2);
+}
+
+/* Dark mode support for ghost button */
+.dark .btn-ghost-forge {
+  color: #9ca3af;
+}
+
+.dark .btn-ghost-forge:hover {
+  background: rgba(156, 163, 175, 0.1);
+  color: #d1d5db;
+  border-color: rgba(156, 163, 175, 0.2);
 }
 
 /* Success Button */
@@ -639,6 +662,11 @@ input:focus-visible {
   animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Dark mode support for modal container */
+.dark .modal-fullscreen-container {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(100%);
@@ -681,6 +709,12 @@ input:focus-visible {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode support for modal header */
+.dark .modal-fullscreen-header {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Modal content */
@@ -739,3 +773,52 @@ input:focus-visible {
   background: #8200DB;
   border-radius: 3px;
 }
+
+/* ========================================
+   DARK MODE FORM ENHANCEMENTS
+======================================== */
+
+/* Form input dark mode support */
+.dark .input {
+  background-color: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.dark .input::placeholder {
+  color: #94a3b8;
+}
+
+/* Textarea dark mode support */
+.dark .textarea {
+  background-color: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .textarea:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.dark .textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Label text dark mode support */
+.dark .label-text {
+  color: #f1f5f9;
+}
+
+.dark .label-text-alt {
+  color: #94a3b8;
+}
+
+/* ========================================
+   ENHANCED BUTTON SYSTEM ADDITIONS
+======================================== */

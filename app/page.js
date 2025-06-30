@@ -18,13 +18,26 @@ import {
 import AppWrapper from '../components/AppWrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { useDatabase } from '../hooks/useDatabase';
-import { useTheme } from '../contexts/ThemeContext';
+
 import { getHabitIcon, getCategoryIcon } from '../utils/icons';
 
 function HomePage() {
   const { user, logout } = useAuth();
   const { habits, challenges, loading } = useDatabase();
-  const { isDark, toggleTheme } = useTheme();
+
+  const [showMobileProfile, setShowMobileProfile] = useState(false);
+
+  // Close mobile profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMobileProfile && !event.target.closest('.mobile-profile-container')) {
+        setShowMobileProfile(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showMobileProfile]);
 
   // Dashboard calculations
   const totalHabitStreaks = habits.reduce((total, habit) => total + habit.currentStreak, 0);
@@ -59,22 +72,13 @@ function HomePage() {
               </div>
               
               <div className="flex items-center gap-2">
-                {/* Mobile Theme Toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className="glass p-2 rounded-xl hover:bg-white/20 transition-all duration-300"
-                >
-                  {isDark ? (
-                    <GiSun className="w-5 h-5 text-yellow-300" />
-                  ) : (
-                    <GiMoon className="w-5 h-5 text-purple-200" />
-                  )}
-                </button>
-
                 {/* Mobile User Profile */}
-                <div className="relative group">
-                  <div className="flex items-center gap-2 glass px-2 py-1 rounded-xl">
-            <Image
+                <div className="relative mobile-profile-container">
+                  <button
+                    onClick={() => setShowMobileProfile(!showMobileProfile)}
+                    className="flex items-center gap-2 glass px-2 py-1 rounded-xl"
+                  >
+                    <Image
                       src={user?.photoURL || '/forge-logo.png'}
                       alt="Profile"
                       width={32}
@@ -84,19 +88,22 @@ function HomePage() {
                     <span className="text-sm font-medium text-white">
                       {user?.displayName?.split(' ')[0] || 'User'}
                     </span>
-                  </div>
+                  </button>
                   
                   {/* Mobile Dropdown */}
-                  <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="glass rounded-xl p-2 shadow-premium min-w-[100px]">
+                  {showMobileProfile && (
+                    <div className="absolute right-0 top-full mt-2 z-[60] bg-slate-800 rounded-xl p-2 shadow-xl border border-slate-700 min-w-[100px]">
                       <button
-                        onClick={logout}
-                        className="w-full text-left px-2 py-1 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
+                        onClick={() => {
+                          logout();
+                          setShowMobileProfile(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
                       >
                         Sign Out
                       </button>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -156,22 +163,6 @@ function HomePage() {
             
             {/* Right Side Controls */}
             <div className="flex items-center gap-5">
-              {/* Enhanced Theme Toggle */}
-              <div className="relative">
-                <button
-                  onClick={toggleTheme}
-                  className="glass p-4 rounded-2xl hover:bg-white/20 dark:hover:bg-black/20 transition-all duration-300 group relative overflow-hidden border border-white/20"
-                >
-                  {isDark ? (
-                    <GiSun className="w-7 h-7 text-yellow-300 group-hover:rotate-90 group-hover:scale-110 transition-all duration-500" />
-                  ) : (
-                    <GiMoon className="w-7 h-7 text-purple-200 group-hover:-rotate-12 group-hover:scale-110 transition-all duration-500" />
-                  )}
-                  {/* Ripple effect on hover */}
-                  <div className="absolute inset-0 bg-white/5 rounded-2xl scale-0 group-hover:scale-100 transition-transform duration-300"></div>
-                </button>
-              </div>
-
               {/* Enhanced Stats Card */}
               <div className="glass rounded-3xl p-6 min-w-[140px] backdrop-blur-lg border border-white/30 shadow-2xl">
                 <div className="text-center">
@@ -187,15 +178,18 @@ function HomePage() {
               </div>
               
               {/* Enhanced User Profile */}
-              <div className="relative group">
-                <div className="flex items-center gap-4 glass px-5 py-4 rounded-2xl cursor-pointer hover:bg-white/10 transition-all duration-300 border border-white/20 shadow-xl">
+              <div className="relative">
+                <button
+                  onClick={() => setShowMobileProfile(!showMobileProfile)}
+                  className="flex items-center gap-4 glass px-5 py-4 rounded-2xl hover:bg-white/10 transition-all duration-300 border border-white/20 shadow-xl"
+                >
                   <div className="relative">
-          <Image
+                    <Image
                       src={user?.photoURL || '/forge-logo.png'}
                       alt="Profile"
                       width={48}
                       height={48}
-                      className="w-12 h-12 rounded-full object-cover ring-3 ring-white/40 group-hover:ring-purple-300/60 transition-all duration-300"
+                      className="w-12 h-12 rounded-full object-cover ring-3 ring-white/40 hover:ring-purple-300/60 transition-all duration-300"
                     />
                     {/* Online indicator */}
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white/80 shadow-lg"></div>
@@ -205,23 +199,26 @@ function HomePage() {
                       <GiLightningTrio className="w-5 h-5 text-purple-300" />
                       {user?.displayName?.split(' ')[0] || 'User'}
                     </div>
-                    <div className="text-sm text-slate-200 font-medium">
+                    <div className="text-sm text-gray-400 font-medium">
                       {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
                     </div>
                   </div>
-                </div>
+                </button>
                 
                 {/* Dropdown */}
-                <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="glass rounded-2xl p-2 shadow-premium min-w-[120px]">
+                {showMobileProfile && (
+                  <div className="absolute right-0 top-full mt-2 z-[60] bg-slate-800 rounded-xl p-2 shadow-xl border border-slate-700 min-w-[120px]">
                     <button
-                      onClick={logout}
-                      className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl text-sm font-medium transition-colors"
+                      onClick={() => {
+                        logout();
+                        setShowMobileProfile(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
                     >
                       Sign Out
                     </button>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -241,25 +238,33 @@ function HomePage() {
       <nav className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20 transition-all duration-300 shadow-lg">
         <div className="container mx-auto px-4">
           {/* Mobile Navigation */}
-          <div className="sm:hidden flex items-center justify-center space-x-4 py-3">
+          <div className="sm:hidden flex items-center justify-center space-x-2 py-3">
             <Link href="/" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-purple-600 font-bold px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
+              <div className="flex flex-col items-center gap-1 text-purple-600 font-bold px-2 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
                 <GiLightningTrio className="w-5 h-5" />
                 <span className="text-xs">Home</span>
               </div>
             </Link>
             <Link href="/habits" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
+              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
                 <GiBullseye className="w-5 h-5" />
                 <span className="text-xs">Habits</span>
               </div>
             </Link>
             <Link href="/coldblitz" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
+              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
                 <GiFlame className="w-5 h-5" />
                 <span className="text-xs">Coldblitz</span>
               </div>
             </Link>
+            <button onClick={logout} className="group relative">
+              <div className="flex flex-col items-center gap-1 text-red-600 dark:text-red-400 font-medium px-2 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-300">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="text-xs">Sign Out</span>
+              </div>
+            </button>
           </div>
 
           {/* Desktop Navigation */}
@@ -293,10 +298,10 @@ function HomePage() {
         {/* Mobile-Optimized Welcome Section */}
         <section className="text-center">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl sm:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-3 sm:mb-6 flex items-center justify-center gap-2 sm:gap-4">
-              Ready to build? <GiHeartWings className="text-purple-600 text-2xl sm:text-5xl" />
-            </h2>
-            <p className="text-base sm:text-2xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl mx-auto">
+                    <h2 className="text-2xl sm:text-5xl font-bold text-white mb-3 sm:mb-6 flex items-center justify-center gap-2 sm:gap-4">
+          Ready to build? <GiHeartWings className="text-purple-600 text-2xl sm:text-5xl" />
+        </h2>
+        <p className="text-base sm:text-2xl text-gray-400 leading-relaxed max-w-3xl mx-auto">
               Continue building your habits and completing your challenges. Every day counts towards your transformation!
             </p>
           </div>
@@ -304,10 +309,10 @@ function HomePage() {
 
         {/* Stats Overview */}
         <section>
-          <h3 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4 sm:mb-8 flex items-center justify-center gap-2 sm:gap-3">
-            <GiSparkles className="text-purple-600 text-xl sm:text-3xl" />
-            Your Progress
-          </h3>
+                  <h3 className="text-xl sm:text-3xl font-bold text-white mb-4 sm:mb-8 flex items-center justify-center gap-2 sm:gap-3">
+          <GiSparkles className="text-purple-600 text-xl sm:text-3xl" />
+          Your Progress
+        </h3>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             
             {/* Total Habit Streaks */}
@@ -316,7 +321,7 @@ function HomePage() {
                 <GiFlame className="text-lg sm:text-2xl text-purple-600" />
               </div>
               <div className="text-xl sm:text-3xl font-bold text-purple-600 mb-1">{totalHabitStreaks}</div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">Week Streaks</div>
+              <div className="text-xs sm:text-sm text-gray-400 font-semibold">Week Streaks</div>
             </div>
 
             {/* Weekly Progress */}
@@ -327,7 +332,7 @@ function HomePage() {
               <div className="text-xl sm:text-3xl font-bold text-blue-600 mb-1">
                 {weeklyHabitsCompleted}/{weeklyHabitsTotal}
               </div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">This Week</div>
+              <div className="text-xs sm:text-sm text-gray-400 font-semibold">This Week</div>
             </div>
 
             {/* Challenge Progress */}
@@ -338,7 +343,7 @@ function HomePage() {
               <div className="text-xl sm:text-3xl font-bold text-orange-600 mb-1">
                 {Math.round(totalChallengeProgress)}%
               </div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">Challenges</div>
+              <div className="text-xs sm:text-sm text-gray-400 font-semibold">Challenges</div>
             </div>
 
             {/* Active Items */}
@@ -349,7 +354,7 @@ function HomePage() {
               <div className="text-xl sm:text-3xl font-bold text-green-600 mb-1">
                 {habits.length + challenges.length}
               </div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">Active</div>
+              <div className="text-xs sm:text-sm text-gray-400 font-semibold">Active</div>
             </div>
           </div>
         </section>
@@ -370,8 +375,8 @@ function HomePage() {
                     <GiBullseye className="text-2xl sm:text-3xl text-purple-600" />
                   </div>
                   <div>
-                    <h4 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">Weekly Habits</h4>
-                    <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">Track your weekly progress</p>
+                    <h4 className="text-lg sm:text-xl font-bold text-white mb-1">Weekly Habits</h4>
+                    <p className="text-sm sm:text-base text-gray-400">Track your weekly progress</p>
                   </div>
                 </div>
                 
@@ -411,8 +416,8 @@ function HomePage() {
                     <GiFlame className="text-2xl sm:text-3xl text-orange-600" />
                   </div>
                   <div>
-                    <h4 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">Coldblitz</h4>
-                    <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">21-day challenges</p>
+                    <h4 className="text-lg sm:text-xl font-bold text-white mb-1">Coldblitz</h4>
+                    <p className="text-sm sm:text-base text-gray-400">21-day challenges</p>
                   </div>
                 </div>
                 

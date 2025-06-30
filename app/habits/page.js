@@ -13,7 +13,7 @@ import {
 import AppWrapper from '../../components/AppWrapper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDatabase } from '../../hooks/useDatabase';
-import { useTheme } from '../../contexts/ThemeContext';
+
 import { useToast } from '../../contexts/ToastContext';
 import { getHabitIcon, getCategoryIcon, HABIT_ICONS } from '../../utils/icons';
 import { generateExerciseHabit } from '../../utils/generateHistoricalHabit';
@@ -28,8 +28,9 @@ function HabitsPage() {
     completeHabit,
     deleteHabit 
   } = useDatabase();
-  const { isDark, toggleTheme } = useTheme();
+
   const { success, error: showError, warning } = useToast();
+  const [showMobileProfile, setShowMobileProfile] = useState(false);
 
   const [showAddHabit, setShowAddHabit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +84,18 @@ function HabitsPage() {
     weeklyGoal: 3,
     color: 'purple'
   });
+
+  // Close mobile profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMobileProfile && !event.target.closest('.mobile-profile-container')) {
+        setShowMobileProfile(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showMobileProfile]);
 
   const handleAddHabit = async () => {
     setIsLoading(true);
@@ -438,7 +451,7 @@ function HabitsPage() {
           </div>
           
           {/* Dynamic date labels */}
-          <div className="flex justify-between mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex justify-between mt-2 text-xs text-gray-400">
             <span className="text-[10px] sm:text-xs">
               {contributions.length > 0 && contributions[0][0] ? 
                 contributions[0][0].date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : 
@@ -457,21 +470,21 @@ function HabitsPage() {
 
         {/* Contribution Statistics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
-          <div className="bg-white dark:bg-slate-700 rounded-lg p-2.5 sm:p-3 text-center border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-green-600 dark:text-green-400">{stats.completionRate}%</div>
-            <div className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 leading-tight">Completion<br className="sm:hidden" /> Rate</div>
+          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
+            <div className="text-base sm:text-lg font-bold text-green-600">{stats.completionRate}%</div>
+                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Completion<br className="sm:hidden" /> Rate</div>
           </div>
-          <div className="bg-white dark:bg-slate-700 rounded-lg p-2.5 sm:p-3 text-center border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">{stats.currentStreak}</div>
-            <div className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 leading-tight">Current<br className="sm:hidden" /> Streak</div>
+          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
+            <div className="text-base sm:text-lg font-bold text-blue-600">{stats.currentStreak}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Current<br className="sm:hidden" /> Streak</div>
           </div>
-          <div className="bg-white dark:bg-slate-700 rounded-lg p-2.5 sm:p-3 text-center border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-purple-600 dark:text-purple-400">{stats.longestStreak}</div>
-            <div className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 leading-tight">Longest<br className="sm:hidden" /> Streak</div>
+          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
+            <div className="text-base sm:text-lg font-bold text-purple-600">{stats.longestStreak}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Longest<br className="sm:hidden" /> Streak</div>
           </div>
-          <div className="bg-white dark:bg-slate-700 rounded-lg p-2.5 sm:p-3 text-center border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400">{stats.totalCompleted}</div>
-            <div className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 leading-tight">Total<br className="sm:hidden" /> Days</div>
+          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
+            <div className="text-base sm:text-lg font-bold text-orange-600">{stats.totalCompleted}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Total<br className="sm:hidden" /> Days</div>
           </div>
         </div>
       </div>
@@ -479,7 +492,7 @@ function HabitsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-500">
+    <div className="min-h-screen bg-base-200 transition-colors duration-500">
       {/* Mobile-Optimized Header */}
       <header className="gradient-primary text-white relative overflow-hidden">
         <div className="container mx-auto px-4 py-6 sm:py-16">
@@ -502,21 +515,12 @@ function HabitsPage() {
               </div>
               
               <div className="flex items-center gap-2">
-                {/* Mobile Theme Toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className="glass p-2 rounded-xl hover:bg-white/20 transition-all duration-300"
-                >
-                  {isDark ? (
-                    <GiSun className="w-5 h-5 text-yellow-300" />
-                  ) : (
-                    <GiMoon className="w-5 h-5 text-purple-200" />
-                  )}
-                </button>
-
                 {/* Mobile User Profile */}
-                <div className="relative group">
-                  <div className="flex items-center gap-2 glass px-2 py-1 rounded-xl">
+                <div className="relative mobile-profile-container">
+                  <button
+                    onClick={() => setShowMobileProfile(!showMobileProfile)}
+                    className="flex items-center gap-2 glass px-2 py-1 rounded-xl"
+                  >
                     <Image
                       src={user?.photoURL || '/forge-logo.png'}
                       alt="Profile"
@@ -527,19 +531,22 @@ function HabitsPage() {
                     <span className="text-sm font-medium text-white">
                       {user?.displayName?.split(' ')[0] || 'User'}
                     </span>
-                  </div>
+                  </button>
                   
                   {/* Mobile Dropdown */}
-                  <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="glass rounded-xl p-2 shadow-premium min-w-[100px]">
+                  {showMobileProfile && (
+                    <div className="absolute right-0 top-full mt-2 z-[60] bg-slate-800 rounded-xl p-2 shadow-xl border border-slate-700 min-w-[100px]">
                       <button
-                        onClick={logout}
-                        className="w-full text-left px-2 py-1 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
+                        onClick={() => {
+                          logout();
+                          setShowMobileProfile(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
                       >
                         Sign Out
                       </button>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -595,30 +602,21 @@ function HabitsPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="glass p-2 rounded-xl hover:bg-white/20 dark:hover:bg-black/20 transition-all duration-300"
-              >
-                {isDark ? (
-                  <GiSun className="w-5 h-5 text-yellow-500" />
-                ) : (
-                  <GiMoon className="w-5 h-5 text-purple-600" />
-                )}
-              </button>
-
               <div className="glass text-center px-4 py-2 rounded-2xl">
                 <div className="text-2xl sm:text-3xl font-bold text-purple-600">
                   {habits.reduce((total, habit) => total + habit.currentStreak, 0)}
                 </div>
-                <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">
+                <div className="text-xs sm:text-sm text-gray-400 font-semibold">
                   Total Streaks
                 </div>
               </div>
               
               {/* User Profile */}
-              <div className="relative group">
-                <div className="flex items-center gap-2 glass px-3 py-2 rounded-2xl cursor-pointer">
+              <div className="relative">
+                <button
+                  onClick={() => setShowMobileProfile(!showMobileProfile)}
+                  className="flex items-center gap-2 glass px-3 py-2 rounded-2xl"
+                >
                   <Image
                     src={user?.photoURL || '/forge-logo.png'}
                     alt="Profile"
@@ -629,19 +627,22 @@ function HabitsPage() {
                   <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300">
                     {user?.displayName?.split(' ')[0] || 'User'}
                   </span>
-                </div>
+                </button>
                 
                 {/* Dropdown */}
-                <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="glass rounded-2xl p-2 shadow-premium min-w-[120px]">
+                {showMobileProfile && (
+                  <div className="absolute right-0 top-full mt-2 z-[60] bg-slate-800 rounded-xl p-2 shadow-xl border border-slate-700 min-w-[120px]">
                     <button
-                      onClick={logout}
-                      className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl text-sm font-medium transition-colors"
+                      onClick={() => {
+                        logout();
+                        setShowMobileProfile(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
                     >
                       Sign Out
                     </button>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -656,25 +657,33 @@ function HabitsPage() {
       <nav className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20 transition-all duration-300 shadow-lg">
         <div className="container mx-auto px-4">
           {/* Mobile Navigation */}
-          <div className="sm:hidden flex items-center justify-center space-x-4 py-3">
+          <div className="sm:hidden flex items-center justify-center space-x-2 py-3">
             <Link href="/" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
+              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
                 <GiLightningTrio className="w-5 h-5" />
                 <span className="text-xs">Home</span>
               </div>
             </Link>
             <Link href="/habits" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-purple-600 font-bold px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
+              <div className="flex flex-col items-center gap-1 text-purple-600 font-bold px-2 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
                 <GiBullseye className="w-5 h-5" />
                 <span className="text-xs">Habits</span>
               </div>
             </Link>
             <Link href="/coldblitz" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
+              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
                 <GiFlame className="w-5 h-5" />
                 <span className="text-xs">Coldblitz</span>
               </div>
             </Link>
+            <button onClick={logout} className="group relative">
+              <div className="flex flex-col items-center gap-1 text-red-600 dark:text-red-400 font-medium px-2 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-300">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="text-xs">Sign Out</span>
+              </div>
+            </button>
           </div>
 
           {/* Desktop Navigation */}
@@ -704,8 +713,8 @@ function HabitsPage() {
                 <GiBullseye className="text-lg sm:text-xl text-white" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Your Habits</h2>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Build consistency week by week</p>
+                          <h2 className="text-lg sm:text-2xl font-bold text-white">Your Habits</h2>
+          <p className="text-xs sm:text-sm text-gray-400">Build consistency week by week</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -739,8 +748,8 @@ function HabitsPage() {
                   className="w-12 h-12 sm:w-15 sm:h-15 object-contain mx-auto opacity-20"
                 />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">No habits yet</h3>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-4 sm:mb-6">Start building your first habit to begin your journey</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No habits yet</h3>
+              <p className="text-sm sm:text-base text-gray-400 mb-4 sm:mb-6">Start building your first habit to begin your journey</p>
               <button 
                 className="btn-forge btn-primary-forge text-sm sm:text-base"
                 onClick={() => setShowAddHabit(true)}
@@ -758,13 +767,13 @@ function HabitsPage() {
                         <span className="text-xl sm:text-2xl">
                           {habit.icon || habit.name.split(' ')[0]}
                         </span>
-                        <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100">
+                        <h3 className="text-base sm:text-xl font-bold text-white">
                           {habit.name.includes(' ') ? habit.name.substring(habit.name.indexOf(' ') + 1) : habit.name}
                         </h3>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">{habit.category}</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mb-1">{habit.category}</p>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="text-slate-500 dark:text-slate-400">
+                        <span className="text-gray-400">
                           {habit.completed}/{habit.weeklyGoal} this week
                         </span>
                         <span className="flex items-center gap-1 text-orange-600 font-semibold">
@@ -774,7 +783,7 @@ function HabitsPage() {
                       </div>
                     </div>
                     <div className="text-center bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl px-4 py-2 min-w-[80px]">
-                      <div className="text-2xl font-bold text-slate-700">
+                      <div className="text-2xl font-bold text-white">
                         {Math.round(calculateProgress(habit.completed, habit.weeklyGoal))}%
                       </div>
                       <div className="text-xs text-slate-500 font-semibold">
@@ -785,8 +794,8 @@ function HabitsPage() {
 
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Weekly Progress</span>
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                      <span className="text-sm font-semibold text-white">Weekly Progress</span>
+                      <span className="text-sm text-gray-400">
                         {habit.completed} of {habit.weeklyGoal} completed
                       </span>
                     </div>
@@ -874,10 +883,10 @@ function HabitsPage() {
                     className="w-8 h-8 object-contain"
                   />
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">
+                    <h3 className="text-xl font-bold text-white">
                       {addHabitStep === 1 ? 'Choose Habit Template' : addHabitStep === 2 ? 'Customize Habit' : 'Review & Create'}
                     </h3>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-gray-400">
                       {addHabitStep === 1 ? 'Pick a habit template or create custom' : addHabitStep === 2 ? 'Personalize your habit details' : 'Almost ready to start!'}
                     </p>
                   </div>
@@ -911,8 +920,8 @@ function HabitsPage() {
                 <div className="step-transition max-w-6xl mx-auto">
                   <div className="text-center mb-8">
                     <div className="text-6xl mb-4">🎯</div>
-                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Choose Your Habit</h4>
-                    <p className="text-slate-600">Select a habit template or create a custom one</p>
+                    <h4 className="text-2xl font-bold text-white mb-2">Choose Your Habit</h4>
+                    <p className="text-gray-400">Select a habit template or create a custom one</p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -937,12 +946,12 @@ function HabitsPage() {
                             <span className="text-2xl filter drop-shadow-sm">{template.icon}</span>
                           </div>
                           <div className="flex-1">
-                            <h5 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-1">{template.name}</h5>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">{template.weeklyGoal}x per week</p>
+                            <h5 className="font-bold text-lg text-white mb-1">{template.name}</h5>
+                            <p className="text-sm text-gray-400">{template.weeklyGoal}x per week</p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-full px-3 py-1 font-semibold">
+                          <div className="text-xs text-gray-400 bg-slate-800 rounded-full px-3 py-1 font-semibold">
                             {template.category}
                           </div>
                           <div className="text-xs text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full">
@@ -969,22 +978,22 @@ function HabitsPage() {
               {addHabitStep === 2 && (
                 <div className="step-transition max-w-4xl mx-auto space-y-8">
                   <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <span className="text-4xl filter drop-shadow-sm">{customHabit.icon}</span>
+                    <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                      <span className="text-4xl">{customHabit.icon}</span>
                     </div>
-                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Customize Your Habit</h4>
-                    <p className="text-slate-600">Make it personal and specific to your goals</p>
+                    <h4 className="text-2xl font-bold text-white mb-2">Customize Your Habit</h4>
+                    <p className="text-gray-400">Make it personal and specific to your goals</p>
                   </div>
 
                   {/* Habit Name */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Habit Name</span>
+                                              <span className="label-text font-semibold text-lg text-white">Habit Name</span>
                     </label>
                     <input 
                       type="text" 
                       placeholder="e.g., Exercise, Read, Meditate, Drink Water" 
-                      className="input input-bordered w-full text-base focus-ring text-slate-900 placeholder-slate-500"
+                                              className="input input-bordered w-full text-base focus-ring text-white placeholder-gray-400"
                       value={customHabit.name}
                       onChange={(e) => setCustomHabit({ ...customHabit, name: e.target.value })}
                     />
@@ -993,7 +1002,7 @@ function HabitsPage() {
                   {/* Icon Selection */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Choose Icon</span>
+                                              <span className="label-text font-semibold text-lg text-white">Choose Icon</span>
                     </label>
                     <div className="grid grid-cols-8 sm:grid-cols-10 lg:grid-cols-12 gap-3">
                       {['💪', '📚', '🧘‍♀️', '💧', '🌅', '✍️', '🚶‍♂️', '📱', '🎨', '🥗', '📞', '🎵', '⚡', '🔥', '🎯', '💡', '🚀', '🌟', '🎉', '💯', '🏆', '✨', '❤️', '🧠'].map(icon => (
@@ -1001,8 +1010,8 @@ function HabitsPage() {
                           key={icon}
                           className={`p-4 rounded-xl text-2xl hover:scale-110 transition-all duration-200 ${
                             customHabit.icon === icon 
-                              ? 'bg-purple-100 border-2 border-purple-500 shadow-lg' 
-                              : 'bg-slate-100 hover:bg-slate-200 hover:shadow-md'
+                              ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500 shadow-lg' 
+                              : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 hover:shadow-md'
                           }`}
                           onClick={() => setCustomHabit({ ...customHabit, icon })}
                         >
@@ -1015,7 +1024,7 @@ function HabitsPage() {
                   {/* Category Selection */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Category</span>
+                                              <span className="label-text font-semibold text-lg text-white">Category</span>
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       {['Health & Fitness', 'Learning', 'Mindfulness', 'Productivity', 'Creativity', 'Social'].map(category => (
@@ -1023,12 +1032,12 @@ function HabitsPage() {
                           key={category}
                           className={`p-4 rounded-xl text-left transition-all duration-200 hover:scale-105 ${
                             customHabit.category === category
-                              ? 'bg-purple-100 border-2 border-purple-500 shadow-lg'
-                              : 'bg-slate-100 hover:bg-slate-200 hover:shadow-md'
+                              ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500 shadow-lg'
+                              : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 hover:shadow-md'
                           }`}
                           onClick={() => setCustomHabit({ ...customHabit, category })}
                         >
-                          <span className="text-sm font-semibold text-slate-900">{category}</span>
+                                                      <span className="text-sm font-semibold text-white">{category}</span>
                         </button>
                       ))}
                     </div>
@@ -1037,7 +1046,7 @@ function HabitsPage() {
                   {/* Weekly Goal */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Weekly Goal</span>
+                                              <span className="label-text font-semibold text-lg text-white">Weekly Goal</span>
                     </label>
                     <div className="grid grid-cols-7 gap-3">
                       {[1, 2, 3, 4, 5, 6, 7].map(goal => (
@@ -1046,7 +1055,7 @@ function HabitsPage() {
                           className={`p-4 rounded-xl text-center font-bold text-lg transition-all duration-200 hover:scale-105 ${
                             customHabit.weeklyGoal === goal
                               ? 'bg-purple-500 text-white shadow-lg'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:shadow-md'
+                              : 'bg-slate-800 hover:bg-slate-700 text-gray-400 hover:shadow-md'
                           }`}
                           onClick={() => setCustomHabit({ ...customHabit, weeklyGoal: goal })}
                         >
@@ -1054,7 +1063,7 @@ function HabitsPage() {
                         </button>
                       ))}
                     </div>
-                    <p className="text-sm text-slate-600 mt-3 text-center">
+                    <p className="text-sm text-gray-400 mt-3 text-center">
                       {customHabit.weeklyGoal === 7 ? 'Every day' : `${customHabit.weeklyGoal} times per week`}
                     </p>
                   </div>
@@ -1082,8 +1091,8 @@ function HabitsPage() {
                 <div className="step-transition max-w-3xl mx-auto space-y-8">
                   <div className="text-center mb-8">
                     <div className="text-6xl mb-4">🎉</div>
-                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Ready to Start!</h4>
-                    <p className="text-slate-600">Review your habit details and begin your journey</p>
+                    <h4 className="text-2xl font-bold text-white mb-2">Ready to Start!</h4>
+                    <p className="text-gray-400">Review your habit details and begin your journey</p>
                   </div>
 
                   {/* Habit Preview */}
@@ -1095,10 +1104,10 @@ function HabitsPage() {
                     </div>
 
                     <div className="text-center mb-6">
-                      <h5 className="text-2xl font-bold text-slate-900 mb-2">{customHabit.name}</h5>
-                      <p className="text-slate-600 bg-slate-100 rounded-full px-4 py-2 inline-block font-semibold">
-                        {customHabit.category}
-                      </p>
+                                              <h5 className="text-2xl font-bold text-white mb-2">{customHabit.name}</h5>
+                        <p className="text-gray-400 bg-slate-800 rounded-full px-4 py-2 inline-block font-semibold">
+                          {customHabit.category}
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6 mb-6">
@@ -1107,13 +1116,13 @@ function HabitsPage() {
                         <div className="text-sm text-purple-500 font-semibold">per week</div>
                       </div>
                       <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-bold text-slate-700">0</div>
+                                                  <div className="text-3xl font-bold text-white">0</div>
                         <div className="text-sm text-slate-500 font-semibold">week streak</div>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-sm font-semibold text-slate-700 text-center">Weekly Progress Preview</p>
+                      <p className="text-sm font-semibold text-gray-400 text-center">Weekly Progress Preview</p>
                       <div className="flex gap-2">
                         {Array.from({ length: customHabit.weeklyGoal }, (_, i) => (
                           <div key={i} className="flex-1 h-4 bg-purple-300 opacity-50 rounded-full"></div>

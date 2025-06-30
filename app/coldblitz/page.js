@@ -14,7 +14,7 @@ import {
 import AppWrapper from '../../components/AppWrapper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDatabase } from '../../hooks/useDatabase';
-import { useTheme } from '../../contexts/ThemeContext';
+
 import { useToast } from '../../contexts/ToastContext';
 import { getHabitIcon, getCategoryIcon } from '../../utils/icons';
 
@@ -29,13 +29,26 @@ function ColdblitzPage() {
     archiveChallenge,
     convertChallengeToHabit: dbConvertChallengeToHabit
   } = useDatabase();
-  const { isDark, toggleTheme } = useTheme();
+
   const { success, error: showError, warning } = useToast();
 
   const [showAddChallenge, setShowAddChallenge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStates, setLoadingStates] = useState({});
   const [completionMessage, setCompletionMessage] = useState(null);
+  const [showMobileProfile, setShowMobileProfile] = useState(false);
+
+  // Close mobile profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMobileProfile && !event.target.closest('.mobile-profile-container')) {
+        setShowMobileProfile(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showMobileProfile]);
 
   // Challenge templates for Coldblitz
   const challengeTemplates = [
@@ -288,21 +301,12 @@ function ColdblitzPage() {
               </div>
               
               <div className="flex items-center gap-2">
-                {/* Mobile Theme Toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className="glass p-2 rounded-xl hover:bg-white/20 transition-all duration-300"
-                >
-                  {isDark ? (
-                    <GiSun className="w-5 h-5 text-yellow-300" />
-                  ) : (
-                    <GiMoon className="w-5 h-5 text-orange-200" />
-                  )}
-                </button>
-
                 {/* Mobile User Profile */}
-                <div className="relative group">
-                  <div className="flex items-center gap-2 glass px-2 py-1 rounded-xl">
+                <div className="relative mobile-profile-container">
+                  <button
+                    onClick={() => setShowMobileProfile(!showMobileProfile)}
+                    className="flex items-center gap-2 glass px-2 py-1 rounded-xl"
+                  >
                     <Image
                       src={user?.photoURL || '/forge-logo.png'}
                       alt="Profile"
@@ -313,19 +317,22 @@ function ColdblitzPage() {
                     <span className="text-sm font-medium text-white">
                       {user?.displayName?.split(' ')[0] || 'User'}
                     </span>
-                  </div>
+                  </button>
                   
                   {/* Mobile Dropdown */}
-                  <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="glass rounded-xl p-2 shadow-premium min-w-[100px]">
+                  {showMobileProfile && (
+                    <div className="absolute right-0 top-full mt-2 z-[60] bg-slate-800 rounded-xl p-2 shadow-xl border border-slate-700 min-w-[100px]">
                       <button
-                        onClick={logout}
-                        className="w-full text-left px-2 py-1 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
+                        onClick={() => {
+                          logout();
+                          setShowMobileProfile(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
                       >
                         Sign Out
                       </button>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -384,18 +391,6 @@ function ColdblitzPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="glass p-2 rounded-xl hover:bg-white/20 dark:hover:bg-black/20 transition-all duration-300"
-              >
-                {isDark ? (
-                  <GiSun className="w-5 h-5 text-yellow-500" />
-                ) : (
-                  <GiMoon className="w-5 h-5 text-orange-600" />
-                )}
-              </button>
-
               <div className="glass text-center px-4 py-2 rounded-2xl">
                 <div className="text-2xl sm:text-3xl font-bold text-orange-600">
                   {challenges.length > 0 ? 
@@ -409,8 +404,11 @@ function ColdblitzPage() {
               </div>
               
               {/* User Profile */}
-              <div className="relative group">
-                <div className="flex items-center gap-2 glass px-3 py-2 rounded-2xl cursor-pointer">
+              <div className="relative">
+                <button
+                  onClick={() => setShowMobileProfile(!showMobileProfile)}
+                  className="flex items-center gap-2 glass px-3 py-2 rounded-2xl"
+                >
                   <Image
                     src={user?.photoURL || '/forge-logo.png'}
                     alt="Profile"
@@ -421,19 +419,22 @@ function ColdblitzPage() {
                   <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300">
                     {user?.displayName?.split(' ')[0] || 'User'}
                   </span>
-                </div>
+                </button>
                 
                 {/* Dropdown */}
-                <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="glass rounded-2xl p-2 shadow-premium min-w-[120px]">
+                {showMobileProfile && (
+                  <div className="absolute right-0 top-full mt-2 z-[60] bg-slate-800 rounded-xl p-2 shadow-xl border border-slate-700 min-w-[120px]">
                     <button
-                      onClick={logout}
-                      className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl text-sm font-medium transition-colors"
+                      onClick={() => {
+                        logout();
+                        setShowMobileProfile(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-red-300 hover:bg-red-50/10 rounded-lg text-sm font-medium transition-colors"
                     >
                       Sign Out
                     </button>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -448,25 +449,33 @@ function ColdblitzPage() {
       <nav className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20 transition-all duration-300 shadow-lg">
         <div className="container mx-auto px-4">
           {/* Mobile Navigation */}
-          <div className="sm:hidden flex items-center justify-center space-x-4 py-3">
+          <div className="sm:hidden flex items-center justify-center space-x-2 py-3">
             <Link href="/" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
+              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
                 <GiLightningTrio className="w-5 h-5" />
                 <span className="text-xs">Home</span>
               </div>
             </Link>
             <Link href="/habits" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
+              <div className="flex flex-col items-center gap-1 text-slate-600 dark:text-slate-400 font-medium px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
                 <GiBullseye className="w-5 h-5" />
                 <span className="text-xs">Habits</span>
               </div>
             </Link>
             <Link href="/coldblitz" className="group relative">
-              <div className="flex flex-col items-center gap-1 text-orange-600 font-bold px-3 py-2 rounded-lg bg-orange-50 dark:bg-orange-900/30">
+              <div className="flex flex-col items-center gap-1 text-orange-600 font-bold px-2 py-2 rounded-lg bg-orange-50 dark:bg-orange-900/30">
                 <GiFlame className="w-5 h-5" />
                 <span className="text-xs">Coldblitz</span>
               </div>
             </Link>
+            <button onClick={logout} className="group relative">
+              <div className="flex flex-col items-center gap-1 text-red-600 dark:text-red-400 font-medium px-2 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-300">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="text-xs">Sign Out</span>
+              </div>
+            </button>
           </div>
 
           {/* Desktop Navigation */}
@@ -496,8 +505,8 @@ function ColdblitzPage() {
                 <GiFlame className="text-lg sm:text-xl text-white" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Your Challenges</h2>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Commit to 21 days of transformation</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-white">Your Challenges</h2>
+                <p className="text-xs sm:text-sm text-gray-400">Commit to 21 days of transformation</p>
               </div>
             </div>
             <button 
@@ -519,8 +528,8 @@ function ColdblitzPage() {
                   className="w-12 h-12 sm:w-15 sm:h-15 object-contain mx-auto opacity-20"
                 />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">No challenges yet</h3>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-4 sm:mb-6">Start your first 21-day challenge and earn amazing rewards</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No challenges yet</h3>
+              <p className="text-sm sm:text-base text-gray-400 mb-4 sm:mb-6">Start your first 21-day challenge and earn amazing rewards</p>
               <button 
                 className="btn-forge btn-primary-forge text-sm sm:text-base"
                 onClick={() => setShowAddChallenge(true)}
@@ -538,11 +547,11 @@ function ColdblitzPage() {
                         <span className="text-xl sm:text-2xl">
                           {challenge.icon || challenge.name.split(' ')[0]}
                         </span>
-                        <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100">
+                        <h3 className="text-base sm:text-xl font-bold text-white">
                           {challenge.name.includes(' ') ? challenge.name.substring(challenge.name.indexOf(' ') + 1) : challenge.name}
                         </h3>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">{challenge.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mb-1">{challenge.description}</p>
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-purple-600 font-semibold">
                         <GiTrophyCup className="text-sm sm:text-base" />
                         <span>{challenge.reward}</span>
@@ -560,8 +569,8 @@ function ColdblitzPage() {
 
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Progress</span>
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                      <span className="text-sm font-semibold text-white">Progress</span>
+                      <span className="text-sm text-gray-400">
                         {challenge.daysCompleted.length} of {challenge.totalDays} days
                       </span>
                     </div>
@@ -697,10 +706,10 @@ function ColdblitzPage() {
                     className="w-8 h-8 object-contain"
                   />
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">
+                    <h3 className="text-xl font-bold text-white">
                       {addChallengeStep === 1 ? 'Choose Challenge' : addChallengeStep === 2 ? 'Customize Challenge' : 'Set Your Reward'}
                     </h3>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-gray-400">
                       {addChallengeStep === 1 ? 'Pick a 21-day challenge template' : addChallengeStep === 2 ? 'Personalize your challenge details' : 'What will you reward yourself with?'}
                     </p>
                   </div>
@@ -734,8 +743,8 @@ function ColdblitzPage() {
                 <div className="step-transition max-w-6xl mx-auto">
                   <div className="text-center mb-8">
                     <div className="text-6xl mb-4">🔥</div>
-                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Choose Your 21-Day Challenge</h4>
-                    <p className="text-slate-600">Select a challenge template or create a custom one</p>
+                    <h4 className="text-2xl font-bold text-white mb-2">Choose Your 21-Day Challenge</h4>
+                    <p className="text-gray-400">Select a challenge template or create a custom one</p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -750,12 +759,12 @@ function ColdblitzPage() {
                             <span className="text-2xl filter drop-shadow-sm">{template.icon}</span>
                           </div>
                           <div className="flex-1">
-                            <h5 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-1">{template.name}</h5>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">{template.description}</p>
+                            <h5 className="font-bold text-lg text-white mb-1">{template.name}</h5>
+                            <p className="text-sm text-gray-400">{template.description}</p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-full px-3 py-1 font-semibold">
+                          <div className="text-xs text-gray-400 bg-slate-800 rounded-full px-3 py-1 font-semibold">
                             {template.category}
                           </div>
                           <div className="text-xs text-orange-600 dark:text-orange-400 font-bold bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-full">
@@ -785,19 +794,19 @@ function ColdblitzPage() {
                     <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-red-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
                       <span className="text-4xl">{customChallenge.icon}</span>
                     </div>
-                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Customize Your Challenge</h4>
-                    <p className="text-slate-600">Make it personal and specific to your goals</p>
+                    <h4 className="text-2xl font-bold text-white mb-2">Customize Your Challenge</h4>
+                    <p className="text-gray-400">Make it personal and specific to your goals</p>
                   </div>
 
                   {/* Challenge Name */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Challenge Name</span>
+                      <span className="label-text font-semibold text-lg text-white">Challenge Name</span>
                     </label>
                     <input 
                       type="text" 
                       placeholder="e.g., Morning Meditation, Cold Shower, Daily Reading" 
-                      className="input input-bordered w-full text-base focus-ring text-slate-900 placeholder-slate-500"
+                      className="input input-bordered w-full text-base focus-ring text-white placeholder-gray-400"
                       value={customChallenge.name}
                       onChange={(e) => setCustomChallenge({ ...customChallenge, name: e.target.value })}
                     />
@@ -806,11 +815,11 @@ function ColdblitzPage() {
                   {/* Description */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Description</span>
+                      <span className="label-text font-semibold text-lg text-white">Description</span>
                     </label>
                     <textarea 
                       placeholder="Describe what you'll do each day (e.g., 10 minutes of mindfulness meditation)"
-                      className="textarea textarea-bordered w-full text-base focus-ring text-slate-900 placeholder-slate-500"
+                      className="textarea textarea-bordered w-full text-base focus-ring text-white placeholder-gray-400"
                       rows="3"
                       value={customChallenge.description}
                       onChange={(e) => setCustomChallenge({ ...customChallenge, description: e.target.value })}
@@ -820,7 +829,7 @@ function ColdblitzPage() {
                   {/* Icon Selection */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Choose Icon</span>
+                      <span className="label-text font-semibold text-lg text-white">Choose Icon</span>
                     </label>
                     <div className="grid grid-cols-8 sm:grid-cols-10 lg:grid-cols-12 gap-3">
                       {['🔥', '🧘‍♀️', '🚿', '💪', '📚', '📵', '💧', '🌅', '🙏', '🥗', '🎨', '🚶‍♂️', '🎵', '✍️', '🧠', '⚡', '🎯', '🌟', '💎', '🚀', '⭐', '💯', '🏆', '✨'].map(icon => (
@@ -828,8 +837,8 @@ function ColdblitzPage() {
                           key={icon}
                           className={`p-4 rounded-xl text-2xl hover:scale-110 transition-all duration-200 ${
                             customChallenge.icon === icon 
-                              ? 'bg-orange-100 border-2 border-orange-500 shadow-lg' 
-                              : 'bg-slate-100 hover:bg-slate-200 hover:shadow-md'
+                              ? 'bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-500 shadow-lg' 
+                              : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 hover:shadow-md'
                           }`}
                           onClick={() => setCustomChallenge({ ...customChallenge, icon })}
                         >
@@ -862,8 +871,8 @@ function ColdblitzPage() {
                 <div className="step-transition max-w-3xl mx-auto space-y-8">
                   <div className="text-center mb-8">
                     <div className="text-6xl mb-4">🎁</div>
-                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Set Your Reward</h4>
-                    <p className="text-slate-600">What will you treat yourself to after completing this 21-day challenge?</p>
+                    <h4 className="text-2xl font-bold text-white mb-2">Set Your Reward</h4>
+                    <p className="text-gray-400">What will you treat yourself to after completing this 21-day challenge?</p>
                   </div>
 
                   {/* Challenge Preview */}
@@ -873,8 +882,8 @@ function ColdblitzPage() {
                         <span className="text-2xl">{customChallenge.icon}</span>
                       </div>
                       <div>
-                        <h5 className="text-xl font-bold text-slate-900">{customChallenge.name}</h5>
-                        <p className="text-slate-600">{customChallenge.description}</p>
+                        <h5 className="text-xl font-bold text-white">{customChallenge.name}</h5>
+                        <p className="text-gray-400">{customChallenge.description}</p>
                       </div>
                     </div>
                     <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-4 text-center">
@@ -886,23 +895,23 @@ function ColdblitzPage() {
                   {/* Reward Input */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold text-lg text-slate-900">Your Reward</span>
+                      <span className="label-text font-semibold text-lg text-white">Your Reward</span>
                     </label>
                     <input 
                       type="text" 
                       placeholder="e.g., New book, Spa day, Gaming setup, Weekend getaway" 
-                      className="input input-bordered w-full text-base focus-ring text-slate-900 placeholder-slate-500"
+                      className="input input-bordered w-full text-base focus-ring text-white placeholder-gray-400"
                       value={customChallenge.reward}
                       onChange={(e) => setCustomChallenge({ ...customChallenge, reward: e.target.value })}
                     />
                     <div className="label">
-                      <span className="label-text-alt text-slate-500">Make it something you really want - it will motivate you!</span>
+                      <span className="label-text-alt text-slate-500 dark:text-slate-400">Make it something you really want - it will motivate you!</span>
                     </div>
                   </div>
 
                   {/* Reward Suggestions */}
                   <div className="space-y-4">
-                    <h6 className="font-semibold text-slate-900">Popular Reward Ideas:</h6>
+                                          <h6 className="font-semibold text-white">Popular Reward Ideas:</h6>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {[
                         '🛍️ Shopping spree',
@@ -917,7 +926,7 @@ function ColdblitzPage() {
                       ].map((suggestion, index) => (
                         <button
                           key={index}
-                          className="text-left p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors text-sm"
+                          className="text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors text-sm text-slate-700 dark:text-slate-300"
                           onClick={() => setCustomChallenge({ ...customChallenge, reward: suggestion.substring(2) })}
                         >
                           {suggestion}
