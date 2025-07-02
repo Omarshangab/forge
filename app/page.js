@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -39,14 +39,57 @@ function HomePage() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showMobileProfile]);
 
-  // Dashboard calculations
-  const totalHabitStreaks = habits.reduce((total, habit) => total + habit.currentStreak, 0);
-  const totalChallengeProgress = challenges.length > 0 ? 
-    challenges.reduce((total, challenge) => 
-      total + (challenge.daysCompleted.length / challenge.totalDays) * 100, 0
-    ) / challenges.length : 0;
-  const weeklyHabitsCompleted = habits.reduce((total, habit) => total + habit.completed, 0);
-  const weeklyHabitsTotal = habits.reduce((total, habit) => total + habit.weeklyGoal, 0);
+  // Fixed dashboard calculations with proper null safety and memoization
+  const dashboardStats = useMemo(() => {
+    // Calculate total habit streaks with null safety
+    const totalHabitStreaks = habits.reduce((total, habit) => {
+      return total + (habit.currentStreak || 0);
+    }, 0);
+    
+    // Calculate challenge progress with proper null safety
+    const totalChallengeProgress = challenges.length > 0 ? 
+      challenges.reduce((total, challenge) => {
+        const totalDays = challenge.totalDays || 21;
+        const completedDays = (challenge.daysCompleted || []).length;
+        return total + (completedDays / totalDays) * 100;
+      }, 0) / challenges.length : 0;
+    
+    // Calculate weekly habits progress with null safety
+    const weeklyHabitsCompleted = habits.reduce((total, habit) => {
+      return total + (habit.completed || 0);
+    }, 0);
+    
+    const weeklyHabitsTotal = habits.reduce((total, habit) => {
+      return total + (habit.weeklyGoal || 0);
+    }, 0);
+
+    return {
+      totalHabitStreaks,
+      totalChallengeProgress: Math.round(totalChallengeProgress),
+      weeklyHabitsCompleted,
+      weeklyHabitsTotal,
+      totalActiveItems: habits.length + challenges.length
+    };
+  }, [habits, challenges]);
+
+  // Safe habit progress calculation
+  const calculateHabitProgress = useCallback((habit) => {
+    const completed = habit.completed || 0;
+    const weeklyGoal = habit.weeklyGoal || 1; // Prevent division by zero
+    return Math.min((completed / weeklyGoal) * 100, 100);
+  }, []);
+
+  // Safe challenge progress calculation
+  const calculateChallengeProgress = useCallback((challenge) => {
+    const totalDays = challenge.totalDays || 21;
+    const completedDays = (challenge.daysCompleted || []).length;
+    return Math.min((completedDays / totalDays) * 100, 100);
+  }, []);
+
+  // Safe display functions
+  const getDisplayName = useCallback(() => {
+    return user?.displayName?.split(' ')[0] || 'User';
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-500">
@@ -86,7 +129,7 @@ function HomePage() {
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <span className="text-sm font-medium text-white">
-                      {user?.displayName?.split(' ')[0] || 'User'}
+                      {getDisplayName()}
                     </span>
                   </button>
                   
@@ -111,15 +154,15 @@ function HomePage() {
             {/* Mobile Stats Bar */}
             <div className="flex items-center justify-between glass rounded-xl p-3 mb-2">
               <div className="text-center">
-                <div className="text-xl font-bold text-purple-300">{totalHabitStreaks}</div>
+                <div className="text-xl font-bold text-purple-300">{dashboardStats.totalHabitStreaks}</div>
                 <div className="text-xs text-slate-300">Days</div>
               </div>
               <div className="text-center">
-                <div className="text-xl font-bold text-blue-300">{weeklyHabitsCompleted}/{weeklyHabitsTotal}</div>
+                <div className="text-xl font-bold text-blue-300">{dashboardStats.weeklyHabitsCompleted}/{dashboardStats.weeklyHabitsTotal}</div>
                 <div className="text-xs text-slate-300">This Week</div>
               </div>
               <div className="text-center">
-                <div className="text-xl font-bold text-orange-300">{Math.round(totalChallengeProgress)}%</div>
+                <div className="text-xl font-bold text-orange-300">{dashboardStats.totalChallengeProgress}%</div>
                 <div className="text-xs text-slate-300">Challenges</div>
               </div>
             </div>
@@ -128,7 +171,7 @@ function HomePage() {
             <div className="text-center">
               <p className="text-sm text-slate-200">
                 <GiHeartWings className="inline w-4 h-4 mr-1 text-purple-300" />
-                Welcome back, {user?.displayName?.split(' ')[0] || 'User'}!
+                Welcome back, {getDisplayName()}!
               </p>
             </div>
         </div>
@@ -156,7 +199,7 @@ function HomePage() {
                 </h1>
                 <p className="text-xl sm:text-2xl text-slate-200 font-semibold flex items-center gap-3">
                   <GiHeartWings className="text-purple-300 text-2xl" />
-                  Welcome back, {user?.displayName?.split(' ')[0] || 'User'}!
+                  Welcome back, {getDisplayName()}!
                 </p>
               </div>
             </div>
@@ -167,7 +210,7 @@ function HomePage() {
               <div className="glass rounded-3xl p-6 min-w-[140px] backdrop-blur-lg border border-white/30 shadow-2xl">
                 <div className="text-center">
                   <div className="text-4xl sm:text-5xl font-bold bg-gradient-to-br from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-transparent mb-2">
-                    {totalHabitStreaks}
+                    {dashboardStats.totalHabitStreaks}
                   </div>
                   <div className="text-sm font-bold text-slate-200 uppercase tracking-wider">
                     Total Days
@@ -197,7 +240,7 @@ function HomePage() {
                   <div className="hidden sm:block">
                     <div className="text-base font-bold text-white flex items-center gap-2">
                       <GiLightningTrio className="w-5 h-5 text-purple-300" />
-                      {user?.displayName?.split(' ')[0] || 'User'}
+                      {getDisplayName()}
                     </div>
                     <div className="text-sm text-gray-400 font-medium">
                       {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
@@ -320,7 +363,7 @@ function HomePage() {
               <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-4">
                 <GiFlame className="text-lg sm:text-2xl text-purple-600" />
               </div>
-              <div className="text-xl sm:text-3xl font-bold text-purple-600 mb-1">{totalHabitStreaks}</div>
+              <div className="text-xl sm:text-3xl font-bold text-purple-600 mb-1">{dashboardStats.totalHabitStreaks}</div>
               <div className="text-xs sm:text-sm text-gray-400 font-semibold">Week Streaks</div>
             </div>
 
@@ -330,7 +373,7 @@ function HomePage() {
                 <GiBullseye className="text-lg sm:text-2xl text-blue-600" />
               </div>
               <div className="text-xl sm:text-3xl font-bold text-blue-600 mb-1">
-                {weeklyHabitsCompleted}/{weeklyHabitsTotal}
+                {dashboardStats.weeklyHabitsCompleted}/{dashboardStats.weeklyHabitsTotal}
               </div>
               <div className="text-xs sm:text-sm text-gray-400 font-semibold">This Week</div>
             </div>
@@ -341,7 +384,7 @@ function HomePage() {
                 <GiTrophyCup className="text-lg sm:text-2xl text-orange-600" />
               </div>
               <div className="text-xl sm:text-3xl font-bold text-orange-600 mb-1">
-                {Math.round(totalChallengeProgress)}%
+                {dashboardStats.totalChallengeProgress}%
               </div>
               <div className="text-xs sm:text-sm text-gray-400 font-semibold">Challenges</div>
             </div>
@@ -352,7 +395,7 @@ function HomePage() {
                 <GiRocket className="text-lg sm:text-2xl text-green-600" />
               </div>
               <div className="text-xl sm:text-3xl font-bold text-green-600 mb-1">
-                {habits.length + challenges.length}
+                {dashboardStats.totalActiveItems}
               </div>
               <div className="text-xs sm:text-sm text-gray-400 font-semibold">Active</div>
             </div>
@@ -381,7 +424,7 @@ function HomePage() {
                 </div>
                 
                 <div className="space-y-4">
-                  {habits.slice(0, 2).map(habit => {
+                  {habits.length > 0 ? habits.slice(0, 2).map(habit => {
                     const HabitIcon = getHabitIcon(habit.name);
                     return (
                       <div key={habit.id} className="flex items-center justify-between">
@@ -392,11 +435,17 @@ function HomePage() {
                           </span>
                         </div>
                         <div className="text-sm text-purple-600 font-bold">
-                          {habit.completed}/{habit.weeklyGoal}
+                          {habit.completed || 0}/{habit.weeklyGoal || 0}
                         </div>
                       </div>
                     );
-                  })}
+                  }) : (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No habits yet. Create your first habit!
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -422,7 +471,7 @@ function HomePage() {
                 </div>
                 
                 <div className="space-y-4">
-                  {challenges.slice(0, 2).map(challenge => {
+                  {challenges.length > 0 ? challenges.slice(0, 2).map(challenge => {
                     const ChallengeIcon = getHabitIcon(challenge.name);
                     return (
                       <div key={challenge.id} className="flex items-center justify-between">
@@ -433,11 +482,17 @@ function HomePage() {
                           </span>
                         </div>
                         <div className="text-sm text-orange-600 font-bold">
-                          Day {challenge.currentDay}/21
+                          Day {challenge.currentDay || 1}/{challenge.totalDays || 21}
                         </div>
                       </div>
                     );
-                  })}
+                  }) : (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No challenges yet. Start your first 21-day challenge!
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -467,7 +522,7 @@ function HomePage() {
                   Habits for This Week
                 </h4>
                 <div className="space-y-3">
-                  {habits.map(habit => {
+                  {habits.length > 0 ? habits.map(habit => {
                     const HabitIcon = getHabitIcon(habit.name);
                     return (
                       <div key={habit.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg sm:rounded-xl">
@@ -481,16 +536,26 @@ function HomePage() {
                           <div className="w-12 sm:w-16 bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 sm:h-2">
                             <div 
                               className="h-1.5 sm:h-2 bg-purple-500 rounded-full transition-all duration-300"
-                              style={{ width: `${(habit.completed / habit.weeklyGoal) * 100}%` }}
+                              style={{ width: `${calculateHabitProgress(habit)}%` }}
                             ></div>
                           </div>
                           <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                            {habit.completed}/{habit.weeklyGoal}
+                            {habit.completed || 0}/{habit.weeklyGoal || 0}
                           </span>
                         </div>
                       </div>
                     );
-                  })}
+                  }) : (
+                    <div className="text-center py-8">
+                      <GiBullseye className="text-4xl text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                        No habits yet
+                      </p>
+                      <Link href="/habits" className="text-xs text-purple-600 hover:text-purple-700 font-medium">
+                        Create your first habit →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -501,7 +566,7 @@ function HomePage() {
                   Active Challenges
                 </h4>
                 <div className="space-y-3">
-                  {challenges.map(challenge => {
+                  {challenges.length > 0 ? challenges.map(challenge => {
                     const ChallengeIcon = getHabitIcon(challenge.name);
                     return (
                       <div key={challenge.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg sm:rounded-xl">
@@ -515,16 +580,26 @@ function HomePage() {
                           <div className="w-12 sm:w-16 bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 sm:h-2">
                             <div 
                               className="h-1.5 sm:h-2 bg-orange-500 rounded-full transition-all duration-300"
-                              style={{ width: `${(challenge.daysCompleted.length / challenge.totalDays) * 100}%` }}
+                              style={{ width: `${calculateChallengeProgress(challenge)}%` }}
                             ></div>
                           </div>
                           <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                            {challenge.daysCompleted.length}/21
+                            {(challenge.daysCompleted || []).length}/{challenge.totalDays || 21}
                           </span>
                         </div>
                       </div>
                     );
-                  })}
+                  }) : (
+                    <div className="text-center py-8">
+                      <GiFlame className="text-4xl text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                        No challenges yet
+                      </p>
+                      <Link href="/coldblitz" className="text-xs text-orange-600 hover:text-orange-700 font-medium">
+                        Start your first challenge →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

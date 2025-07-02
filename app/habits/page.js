@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -18,12 +18,54 @@ import { useToast } from '../../contexts/ToastContext';
 import { getHabitIcon, getCategoryIcon, HABIT_ICONS } from '../../utils/icons';
 import { generateExerciseHabit } from '../../utils/generateHistoricalHabit';
 
+// Constants
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+const DAYS_PER_WEEK = 7;
+const CHALLENGE_RELATION_THRESHOLD_DAYS = 30;
+const WEEKS_IN_YEAR = 52;
+const MAX_WEEKS_FOR_CONTRIBUTIONS = 104; // 2 years
+
+// Utility functions
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseCompletionDate = (dateRecord) => {
+  if (!dateRecord) return null;
+  
+  if (typeof dateRecord === 'object' && dateRecord.seconds) {
+    return new Date(dateRecord.seconds * 1000);
+  }
+  
+  if (typeof dateRecord === 'string') {
+    return new Date(dateRecord + 'T00:00:00');
+  }
+  
+  return new Date(dateRecord);
+};
+
+const getWeekBounds = (date) => {
+  const start = new Date(date);
+  start.setDate(date.getDate() - date.getDay()); // Sunday
+  start.setHours(0, 0, 0, 0);
+  
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6); // Saturday
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
+};
+
 function HabitsPage() {
   const { user, logout } = useAuth();
   const { 
     habits, 
     challenges,
     loading: dbLoading, 
+    operationInProgress,
     addHabit, 
     completeHabit,
     deleteHabit 
@@ -37,7 +79,7 @@ function HabitsPage() {
   const [loadingStates, setLoadingStates] = useState({});
 
   // Enhanced habit templates with beautiful emojis
-  const habitTemplates = [
+  const habitTemplates = useMemo(() => [
     // Health & Fitness
     { id: 1, name: "Exercise", icon: "💪", category: "Health & Fitness", weeklyGoal: 3, color: "emerald" },
     { id: 2, name: "Drink Water", icon: "💧", category: "Health & Fitness", weeklyGoal: 7, color: "blue" },
@@ -57,9 +99,9 @@ function HabitsPage() {
     // Productivity
     { id: 11, name: "Wake Early", icon: "🌅", category: "Productivity", weeklyGoal: 7, color: "orange" },
     { id: 12, name: "Digital Detox", icon: "📵", category: "Productivity", weeklyGoal: 3, color: "gray" }
-  ];
+  ], []);
 
-  const colors = {
+  const colors = useMemo(() => ({
     emerald: "from-emerald-500 to-emerald-600",
     blue: "from-blue-500 to-blue-600", 
     green: "from-green-500 to-green-600",
@@ -72,7 +114,7 @@ function HabitsPage() {
     pink: "from-pink-500 to-pink-600",
     orange: "from-orange-500 to-orange-600",
     slate: "from-slate-500 to-slate-600"
-  };
+  }), []);
 
   // Add habit modal states
   const [addHabitStep, setAddHabitStep] = useState(1);
@@ -97,7 +139,9 @@ function HabitsPage() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showMobileProfile]);
 
-  const handleAddHabit = async () => {
+  const handleAddHabit = useCallback(async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     
     try {
@@ -124,72 +168,96 @@ function HabitsPage() {
         color: 'purple'
       });
     } catch (error) {
-      console.error('Error adding habit:', error);
-      showError('Error creating habit');
+      showError(error.message || 'Error creating habit');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, customHabit, addHabit, success, showError]);
 
-  const handleCompleteHabit = async (habitId) => {
+  const handleCompleteHabit = useCallback(async (habitId) => {
+    if (operationInProgress.has(`complete-${habitId}`) || loadingStates[habitId]) return;
+    
     setLoadingStates(prev => ({ ...prev, [habitId]: true }));
     
     try {
       await completeHabit(habitId);
+      
+      // Find habit from current state (might be stale, but for toast message it's fine)
       const habit = habits.find(h => h.id === habitId);
       if (habit) {
-        success(`✅ ${habit.name.replace(/^[^\s]*\s/, '')} completed!`);
+        const habitName = habit.name.replace(/^[^\s]*\s/, ''); // Remove emoji prefix
+        success(`✅ ${habitName} completed!`);
+      } else {
+        success('✅ Habit completed!');
       }
     } catch (error) {
-      console.error('Error completing habit:', error);
-      showError('Error completing habit');
+      showError(error.message || 'Error completing habit');
     } finally {
       setLoadingStates(prev => ({ ...prev, [habitId]: false }));
     }
-  };
+  }, [operationInProgress, loadingStates, completeHabit, habits, success, showError]);
 
-  const handleDeleteHabit = async (habitId, habitName) => {
+  const handleDeleteHabit = useCallback(async (habitId, habitName) => {
     if (!window.confirm(`Are you sure you want to delete "${habitName}"? This cannot be undone.`)) {
       return;
     }
 
-    setLoadingStates(prev => ({ ...prev, [`delete-${habitId}`]: true }));
+    const deleteKey = `delete-${habitId}`;
+    if (operationInProgress.has(deleteKey) || loadingStates[deleteKey]) return;
+
+    setLoadingStates(prev => ({ ...prev, [deleteKey]: true }));
     
     try {
       await deleteHabit(habitId);
       success(`🗑️ "${habitName}" habit deleted successfully`);
     } catch (error) {
-      console.error('Error deleting habit:', error);
-      showError('Error deleting habit: ' + error.message);
+      showError(error.message || 'Error deleting habit');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [`delete-${habitId}`]: false }));
+      setLoadingStates(prev => ({ ...prev, [deleteKey]: false }));
     }
-  };
+  }, [operationInProgress, loadingStates, deleteHabit, success, showError]);
 
   // Generate historical exercise habit (temporary dev function)
-  const handleGenerateExerciseHabit = async () => {
-    if (!user) return;
+  const handleGenerateExerciseHabit = useCallback(async () => {
+    if (!user || isLoading) return;
+    
+    // Show confirmation dialog since this creates a lot of data
+    const confirmed = window.confirm(
+      "This will create an Exercise habit with 42 weeks of historical workout data.\n\n" +
+      "⚠️ If you already have an Exercise habit, this will fail.\n" +
+      "📊 This will add ~126-210 workout completions.\n\n" +
+      "Continue?"
+    );
+    
+    if (!confirmed) return;
     
     try {
       setIsLoading(true);
-      await generateExerciseHabit(user.uid);
-      success('🏋️‍♀️ Exercise habit with 42 weeks of historical data created!');
+      const result = await generateExerciseHabit(user.uid);
+      
+      success(
+        `🏋️‍♀️ Exercise habit created! ` +
+        `${result.totalCompletions} workouts across ${result.weeksGenerated} weeks. ` +
+        `Current streak: ${result.weekStreak} weeks!`
+      );
     } catch (error) {
-      console.error('Error generating exercise habit:', error);
-      showError('Error creating exercise habit: ' + error.message);
+      showError(error.message || 'Error creating exercise habit');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, isLoading, success, showError]);
 
-  const calculateProgress = (completed, goal) => {
+  const calculateProgress = useCallback((completed, goal) => {
+    if (!goal || goal <= 0) return 0; // Fix division by zero
     return Math.min((completed / goal) * 100, 100);
-  };
+  }, []);
 
   // Generate contributions graph data from habit start date to 1 year in advance
-  const generateContributionsData = (habit) => {
+  const generateContributionsData = useCallback((habit) => {
     const today = new Date();
-    const habitStartDate = habit.createdAt ? new Date(habit.createdAt.seconds * 1000) : new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // fallback to 1 year ago
+    const habitStartDate = habit.createdAt 
+      ? parseCompletionDate(habit.createdAt) 
+      : new Date(Date.now() - 365 * MILLISECONDS_PER_DAY);
     
     // End date: 1 year from today
     const endDate = new Date(today);
@@ -203,8 +271,8 @@ function HabitsPage() {
     currentDate.setDate(currentDate.getDate() - dayOfWeek);
     
     // Calculate total weeks from aligned start date to 1 year from today
-    const totalDays = Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24));
-    const weeksNeeded = Math.ceil(totalDays / 7);
+    const totalDays = Math.ceil((endDate - currentDate) / MILLISECONDS_PER_DAY);
+    const weeksNeeded = Math.min(Math.ceil(totalDays / DAYS_PER_WEEK), MAX_WEEKS_FOR_CONTRIBUTIONS);
     
     // Get completion data from both habits and challenges
     const habitCompletions = habit.completionDates || [];
@@ -213,7 +281,7 @@ function HabitsPage() {
     const relatedChallenges = challenges.filter(challenge => 
       challenge.originalChallengeId === habit.id || 
       challenge.name.toLowerCase().includes(habit.name.toLowerCase().split(' ')[1] || habit.name.toLowerCase()) ||
-      (challenge.createdAt && Math.abs(new Date(challenge.createdAt.seconds * 1000) - habitStartDate) < 30 * 24 * 60 * 60 * 1000) // Within 30 days
+      (challenge.createdAt && Math.abs(parseCompletionDate(challenge.createdAt) - habitStartDate) < CHALLENGE_RELATION_THRESHOLD_DAYS * MILLISECONDS_PER_DAY)
     );
     
     // Combine all completion dates
@@ -229,19 +297,16 @@ function HabitsPage() {
     
     for (let week = 0; week < weeksNeeded; week++) {
       const weekData = [];
-      for (let day = 0; day < 7; day++) {
+      for (let day = 0; day < DAYS_PER_WEEK; day++) {
         const dayDate = new Date(currentDate);
-        dayDate.setDate(currentDate.getDate() + (week * 7) + day);
+        dayDate.setDate(currentDate.getDate() + (week * DAYS_PER_WEEK) + day);
         
         // Check if this day exists in combined completion records
-        const dayString = dayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+        const dayString = getLocalDateString(dayDate);
         const isCompleted = allCompletions.includes(dayString) || 
                            allCompletions.some(record => {
-                             if (record.seconds) {
-                               const recordDate = new Date(record.seconds * 1000);
-                               return recordDate.toISOString().split('T')[0] === dayString;
-                             }
-                             return false;
+                             const parsedDate = parseCompletionDate(record);
+                             return parsedDate && getLocalDateString(parsedDate) === dayString;
                            });
         
         // Calculate intensity based on activity type and frequency
@@ -249,27 +314,22 @@ function HabitsPage() {
         if (isCompleted && dayDate >= habitStartDate) {
           // Check if this completion is from a challenge (21-day streak pattern)
           const isChallengeDay = relatedChallenges.some(challenge => 
-            challenge.completionDates && challenge.completionDates.includes(dayString)
+            challenge.completionDates && challenge.completionDates.some(compDate => {
+              const parsedDate = parseCompletionDate(compDate);
+              return parsedDate && getLocalDateString(parsedDate) === dayString;
+            })
           );
           
           if (isChallengeDay) {
             intensity = 4; // Max intensity for challenge days
           } else {
             // Calculate intensity based on weekly goal achievement for habits
-            const weekStart = new Date(dayDate);
-            weekStart.setDate(dayDate.getDate() - dayDate.getDay());
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
+            const { start: weekStart, end: weekEnd } = getWeekBounds(dayDate);
             
             // Count completions in this week
             const weekCompletions = allCompletions.filter(record => {
-              let recordDate;
-              if (record.seconds) {
-                recordDate = new Date(record.seconds * 1000);
-              } else {
-                recordDate = new Date(record);
-              }
-              return recordDate >= weekStart && recordDate <= weekEnd;
+              const parsedDate = parseCompletionDate(record);
+              return parsedDate && parsedDate >= weekStart && parsedDate <= weekEnd;
             }).length;
             
             // Calculate intensity based on weekly goal progress
@@ -287,7 +347,10 @@ function HabitsPage() {
           isFuture: dayDate > today,
           isBeforeHabitStart: dayDate < habitStartDate,
           isChallengeDay: isCompleted && relatedChallenges.some(challenge => 
-            challenge.completionDates && challenge.completionDates.includes(dayString)
+            challenge.completionDates && challenge.completionDates.some(compDate => {
+              const parsedDate = parseCompletionDate(compDate);
+              return parsedDate && getLocalDateString(parsedDate) === dayString;
+            })
           )
         });
       }
@@ -295,10 +358,10 @@ function HabitsPage() {
     }
     
     return contributions;
-  };
+  }, [challenges]);
 
   // Calculate contribution statistics
-  const calculateContributionStats = (contributions) => {
+  const calculateContributionStats = useCallback((contributions) => {
     const allDays = contributions.flat().filter(day => !day.isFuture && !day.isBeforeHabitStart);
     const completedDays = allDays.filter(day => day.completed);
     const completionRate = allDays.length > 0 ? Math.round((completedDays.length / allDays.length) * 100) : 0;
@@ -331,10 +394,10 @@ function HabitsPage() {
     });
     
     return { completionRate, currentStreak, longestStreak, totalCompleted: completedDays.length };
-  };
+  }, []);
 
   // Scroll to today function
-  const scrollToToday = (habitId) => {
+  const scrollToToday = useCallback((habitId) => {
     const container = document.getElementById(`contributions-${habitId}`);
     if (container) {
       const todayElement = container.querySelector('[data-is-today="true"]');
@@ -346,10 +409,10 @@ function HabitsPage() {
         });
       }
     }
-  };
+  }, []);
 
   // Render contributions graph
-  const renderContributionsGraph = (habit) => {
+  const renderContributionsGraph = useCallback((habit) => {
     const contributions = generateContributionsData(habit);
     const stats = calculateContributionStats(contributions);
     
@@ -393,26 +456,20 @@ function HabitsPage() {
                   style={{
                     width: `${Math.min(
                       Math.max(
-                        ((new Date() - (habit.createdAt ? new Date(habit.createdAt.seconds * 1000) : new Date(Date.now() - 365 * 24 * 60 * 60 * 1000))) / 
-                        (365 * 24 * 60 * 60 * 1000 * 2)) * 100, 0
+                        ((new Date() - (habit.createdAt ? parseCompletionDate(habit.createdAt) : new Date(Date.now() - 365 * MILLISECONDS_PER_DAY))) / 
+                        (365 * MILLISECONDS_PER_DAY * 2)) * 100, 0
                       ), 100
                     )}%`
                   }}
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => scrollToToday(habit.id)}
-                className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-purple-300 transition-colors px-2 py-1 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30"
-                title="Scroll to today"
-              >
-                📍 Today
-              </button>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                {contributions.length > 0 ? `${contributions.length} weeks` : ''}
-              </div>
-            </div>
+            <button 
+              onClick={() => scrollToToday(habit.id)}
+              className="text-[10px] bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 px-2 py-1 rounded-md transition-colors"
+            >
+              Today
+            </button>
           </div>
           
           <div className="flex gap-0.5 sm:gap-1 min-w-fit">
@@ -489,7 +546,7 @@ function HabitsPage() {
         </div>
       </div>
     );
-  };
+  }, [generateContributionsData, calculateContributionStats, scrollToToday]);
 
   return (
     <div className="min-h-screen bg-base-200 transition-colors duration-500">
@@ -555,13 +612,13 @@ function HabitsPage() {
             <div className="flex items-center justify-between glass rounded-xl p-3 mb-2">
               <div className="text-center">
                 <div className="text-xl font-bold text-purple-300">
-                  {habits.reduce((total, habit) => total + habit.currentStreak, 0)}
+                  {habits.reduce((total, habit) => total + (habit.currentStreak || 0), 0)}
                 </div>
                 <div className="text-xs text-slate-300">Streaks</div>
               </div>
               <div className="text-center">
                 <div className="text-xl font-bold text-blue-300">
-                  {habits.reduce((total, habit) => total + habit.completed, 0)}
+                  {habits.reduce((total, habit) => total + (habit.completed || 0), 0)}
                 </div>
                 <div className="text-xs text-slate-300">Completed</div>
               </div>
@@ -604,7 +661,7 @@ function HabitsPage() {
             <div className="flex items-center gap-3">
               <div className="glass text-center px-4 py-2 rounded-2xl">
                 <div className="text-2xl sm:text-3xl font-bold text-purple-600">
-                  {habits.reduce((total, habit) => total + habit.currentStreak, 0)}
+                  {habits.reduce((total, habit) => total + (habit.currentStreak || 0), 0)}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-400 font-semibold">
                   Total Streaks
@@ -725,14 +782,16 @@ function HabitsPage() {
                 ✨ Add Habit
               </button>
               
-              {/* Temporary dev button for generating historical exercise data */}
+              {/* Demo data generator button */}
               <button
-                className="btn-forge btn-success-forge btn-sm-forge text-xs px-2 py-2"
+                className={`btn-forge btn-success-forge btn-sm-forge text-xs px-2 py-2 ${
+                  isLoading ? 'btn-loading-forge opacity-50' : ''
+                }`}
                 onClick={handleGenerateExerciseHabit}
                 disabled={isLoading}
-                title="Generate 42 weeks of exercise history"
+                title="Generate demo Exercise habit with 42 weeks of historical data"
               >
-                💪 42W
+                {isLoading ? '⏳' : '💪'} Demo
               </button>
             </div>
           </div>
@@ -774,17 +833,17 @@ function HabitsPage() {
                       <p className="text-xs sm:text-sm text-gray-400 mb-1">{habit.category}</p>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-gray-400">
-                          {habit.completed}/{habit.weeklyGoal} this week
+                          {habit.completed || 0}/{habit.weeklyGoal || 0} this week
                         </span>
                         <span className="flex items-center gap-1 text-orange-600 font-semibold">
                           <GiFlame className="text-base" />
-                          <span>{habit.currentStreak} week streak</span>
+                          <span>{habit.currentStreak || 0} week streak</span>
                         </span>
                       </div>
                     </div>
                     <div className="text-center bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl px-4 py-2 min-w-[80px]">
                       <div className="text-2xl font-bold text-purple-600">
-                        {Math.round(calculateProgress(habit.completed, habit.weeklyGoal))}%
+                        {Math.round(calculateProgress(habit.completed || 0, habit.weeklyGoal || 1))}%
                       </div>
                       <div className="text-xs text-slate-500 font-semibold">
                         Week
@@ -796,13 +855,13 @@ function HabitsPage() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold text-white">Weekly Progress</span>
                       <span className="text-sm text-gray-400">
-                        {habit.completed} of {habit.weeklyGoal} completed
+                        {habit.completed || 0} of {habit.weeklyGoal || 0} completed
                       </span>
                     </div>
                     <div className="w-full bg-gradient-to-r from-slate-200 to-slate-300 rounded-full h-3 progress-glow">
                       <div 
                         className={`bg-gradient-to-r ${colors[habit.color?.replace('bg-', '').replace('-500', '') || 'purple']} h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden`}
-                        style={{ width: `${calculateProgress(habit.completed, habit.weeklyGoal)}%` }}
+                        style={{ width: `${calculateProgress(habit.completed || 0, habit.weeklyGoal || 1)}%` }}
                       >
                         <div className="absolute inset-0 shimmer"></div>
                       </div>
@@ -815,11 +874,11 @@ function HabitsPage() {
                   <button 
                     className={`btn-forge btn-dark-forge btn-full-forge ${
                       loadingStates[habit.id] ? 'btn-loading-forge' : ''
-                    } ${habit.completed >= habit.weeklyGoal ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${(habit.completed || 0) >= (habit.weeklyGoal || 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => handleCompleteHabit(habit.id)}
-                    disabled={loadingStates[habit.id] || habit.completed >= habit.weeklyGoal}
+                    disabled={loadingStates[habit.id] || (habit.completed || 0) >= (habit.weeklyGoal || 0)}
                   >
-                    {habit.completed >= habit.weeklyGoal ? (
+                    {(habit.completed || 0) >= (habit.weeklyGoal || 0) ? (
                       <>🎯 Week Goal Achieved!</>
                     ) : (
                       <>✓ Mark Complete</>

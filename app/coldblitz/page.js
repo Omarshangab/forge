@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -23,6 +23,7 @@ function ColdblitzPage() {
   const { 
     challenges, 
     loading: dbLoading, 
+    operationInProgress,
     addChallenge, 
     completeDay,
     addHabit,
@@ -51,7 +52,7 @@ function ColdblitzPage() {
   }, [showMobileProfile]);
 
   // Challenge templates for Coldblitz
-  const challengeTemplates = [
+  const challengeTemplates = useMemo(() => [
     { id: 1, name: "Morning Meditation", icon: "🧘‍♀️", description: "10 minutes of mindfulness", category: "Mindfulness" },
     { id: 2, name: "Cold Shower", icon: "🚿", description: "3-minute cold shower", category: "Wellness" },
     { id: 3, name: "Daily Exercise", icon: "💪", description: "30 minutes of physical activity", category: "Fitness" },
@@ -64,7 +65,7 @@ function ColdblitzPage() {
     { id: 10, name: "Creative Time", icon: "🎨", description: "30 minutes of creative work", category: "Creativity" },
     { id: 11, name: "Walk Outside", icon: "🚶‍♂️", description: "20-minute outdoor walk", category: "Health" },
     { id: 12, name: "Practice Instrument", icon: "🎵", description: "30 minutes of music practice", category: "Learning" }
-  ];
+  ], []);
 
   // Add challenge modal states
   const [addChallengeStep, setAddChallengeStep] = useState(1);
@@ -77,7 +78,9 @@ function ColdblitzPage() {
     category: ''
   });
 
-  const handleAddChallenge = async () => {
+  const handleAddChallenge = useCallback(async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     
     try {
@@ -104,14 +107,13 @@ function ColdblitzPage() {
         category: ''
       });
     } catch (error) {
-      console.error('Error adding challenge:', error);
-      showError('Error creating challenge');
+      showError(error.message || 'Error creating challenge');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, customChallenge, addChallenge, success, showError]);
 
-  const selectChallengeTemplate = (template) => {
+  const selectChallengeTemplate = useCallback((template) => {
     setSelectedChallengeTemplate(template);
     setCustomChallenge({
       name: template.name,
@@ -121,10 +123,10 @@ function ColdblitzPage() {
       category: template.category
     });
     setAddChallengeStep(2);
-  };
+  }, []);
 
   // Convert completed challenge to habit
-  const convertChallengeToHabit = async (challenge) => {
+  const convertChallengeToHabit = useCallback(async (challenge) => {
     try {
       // Map challenge categories to habit categories and weekly goals
       const categoryMapping = {
@@ -164,28 +166,32 @@ function ColdblitzPage() {
     } catch (error) {
       console.error('Error converting challenge to habit:', error);
     }
-  };
+  }, [addHabit]);
 
-  const handleCompleteDay = async (challengeId) => {
+  const handleCompleteDay = useCallback(async (challengeId) => {
+    // Prevent race conditions
+    const operationKey = `complete-challenge-${challengeId}`;
+    if (operationInProgress.has(operationKey) || loadingStates[`challenge_${challengeId}`]) return;
+    
     setLoadingStates(prev => ({ ...prev, [`challenge_${challengeId}`]: true }));
     
     try {
       // Get the challenge before completing the day
       const challenge = challenges.find(c => c.id === challengeId);
-      if (!challenge) return;
+      if (!challenge) throw new Error('Challenge not found');
 
-      // Store current day before updating
-      const currentDay = challenge.currentDay;
+      // The current day that will be completed
+      const dayToComplete = challenge.currentDay;
       
       // Complete the day
       await completeDay(challengeId);
 
       // Show success message based on the day that was just completed
-      const daysRemaining = 21 - currentDay;
-      if (currentDay === 21) {
+      const daysRemaining = 21 - dayToComplete;
+      if (dayToComplete === 21) {
         success(`🎉 Challenge completed! You did it for 21 days straight!`);
       } else {
-        success(`💪 Day ${currentDay} completed! ${daysRemaining} days to go!`);
+        success(`💪 Day ${dayToComplete} completed! ${daysRemaining} days to go!`);
       }
 
       // Note: Auto-conversion to habit is now handled in the database hook
@@ -201,28 +207,33 @@ function ColdblitzPage() {
     } finally {
       setLoadingStates(prev => ({ ...prev, [`challenge_${challengeId}`]: false }));
     }
-  };
+  }, [operationInProgress, loadingStates, challenges, completeDay, success, showError]);
 
-  const handleArchiveChallenge = async (challengeId) => {
+  const handleArchiveChallenge = useCallback(async (challengeId) => {
     if (!confirm('Are you sure you want to archive this challenge? This will remove it from your active challenges.')) {
       return;
     }
 
-    setLoadingStates(prev => ({ ...prev, [`archive_${challengeId}`]: true }));
+    const archiveKey = `archive_${challengeId}`;
+    if (loadingStates[archiveKey]) return;
+
+    setLoadingStates(prev => ({ ...prev, [archiveKey]: true }));
     
     try {
       await archiveChallenge(challengeId);
       success('📦 Challenge archived successfully');
     } catch (error) {
-      console.error('Error archiving challenge:', error);
-      showError('Error archiving challenge');
+      showError(error.message || 'Error archiving challenge');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [`archive_${challengeId}`]: false }));
+      setLoadingStates(prev => ({ ...prev, [archiveKey]: false }));
     }
-  };
+  }, [loadingStates, archiveChallenge, success, showError]);
 
-  const handleConvertToHabit = async (challengeId) => {
-    setLoadingStates(prev => ({ ...prev, [`convert_${challengeId}`]: true }));
+  const handleConvertToHabit = useCallback(async (challengeId) => {
+    const convertKey = `convert_${challengeId}`;
+    if (loadingStates[convertKey]) return;
+
+    setLoadingStates(prev => ({ ...prev, [convertKey]: true }));
     
     try {
       const habitId = await dbConvertChallengeToHabit(challengeId);
@@ -230,22 +241,24 @@ function ColdblitzPage() {
         success('🎉 Challenge converted to weekly habit! Check your Habits page.');
       }
     } catch (error) {
-      console.error('Error converting challenge to habit:', error);
-      showError('Error converting challenge to habit');
+      showError(error.message || 'Error converting challenge to habit');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [`convert_${challengeId}`]: false }));
+      setLoadingStates(prev => ({ ...prev, [convertKey]: false }));
     }
-  };
+  }, [loadingStates, dbConvertChallengeToHabit, success, showError]);
 
-  const renderDayGrid = (challenge) => {
+  // Fixed day grid rendering
+  const renderDayGrid = useCallback((challenge) => {
     const days = Array.from({ length: 21 }, (_, i) => i + 1);
     
     return (
       <div className="grid grid-cols-7 gap-2 sm:gap-3">
         {days.map(day => {
-          const isCompleted = challenge.daysCompleted.includes(day);
-          const isCurrent = day === challenge.currentDay;
-          const isUpcoming = day > challenge.currentDay;
+          // Fix: Check if this day number is in the completed days array
+          const isCompleted = (challenge.daysCompleted || []).includes(day);
+          // Fix: Current day is the next day to be completed
+          const isCurrent = day === challenge.currentDay && !isCompleted;
+          const isUpcoming = day > challenge.currentDay || (day === challenge.currentDay && isCompleted);
           
           return (
             <div
@@ -262,9 +275,35 @@ function ColdblitzPage() {
         })}
       </div>
     );
-  };
+  }, []);
 
-  const resetChallengeForm = () => {
+  // Fixed progress calculation
+  const calculateAverageProgress = useCallback(() => {
+    if (challenges.length === 0) return 0;
+    
+    const totalProgress = challenges.reduce((total, challenge) => {
+      const totalDays = challenge.totalDays || 21;
+      const completedDays = (challenge.daysCompleted || []).length;
+      return total + (completedDays / totalDays) * 100;
+    }, 0);
+    
+    return Math.round(totalProgress / challenges.length);
+  }, [challenges]);
+
+  const calculateTotalDaysCompleted = useCallback(() => {
+    return challenges.reduce((total, challenge) => {
+      return total + ((challenge.daysCompleted || []).length);
+    }, 0);
+  }, [challenges]);
+
+  // Fixed challenge completion check
+  const isChallengeCompleted = useCallback((challenge) => {
+    const totalDays = challenge.totalDays || 21;
+    const completedDays = (challenge.daysCompleted || []).length;
+    return completedDays >= totalDays;
+  }, []);
+
+  const resetChallengeForm = useCallback(() => {
     setCustomChallenge({
       name: '',
       icon: '🔥',
@@ -275,7 +314,7 @@ function ColdblitzPage() {
     setAddChallengeStep(1);
     setSelectedChallengeTemplate(null);
     setShowAddChallenge(false);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-500">
@@ -341,16 +380,13 @@ function ColdblitzPage() {
             <div className="flex items-center justify-between glass rounded-xl p-3 mb-2">
               <div className="text-center">
                 <div className="text-xl font-bold text-orange-300">
-                  {challenges.length > 0 ? 
-                    Math.round(challenges.reduce((total, challenge) => 
-                      total + (challenge.daysCompleted.length / challenge.totalDays) * 100, 0
-                    ) / challenges.length) : 0}%
+                  {calculateAverageProgress()}%
                 </div>
                 <div className="text-xs text-slate-300">Progress</div>
               </div>
               <div className="text-center">
                 <div className="text-xl font-bold text-red-300">
-                  {challenges.reduce((total, challenge) => total + challenge.daysCompleted.length, 0)}
+                  {calculateTotalDaysCompleted()}
                 </div>
                 <div className="text-xs text-slate-300">Days Done</div>
               </div>
@@ -393,10 +429,7 @@ function ColdblitzPage() {
             <div className="flex items-center gap-3">
               <div className="glass text-center px-4 py-2 rounded-2xl">
                 <div className="text-2xl sm:text-3xl font-bold text-orange-600">
-                  {challenges.length > 0 ? 
-                    Math.round(challenges.reduce((total, challenge) => 
-                      total + (challenge.daysCompleted.length / challenge.totalDays) * 100, 0
-                    ) / challenges.length) : 0}%
+                  {calculateAverageProgress()}%
                 </div>
                 <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">
                   Avg Progress
@@ -559,7 +592,7 @@ function ColdblitzPage() {
                     </div>
                     <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 min-w-[70px] sm:min-w-[80px]">
                       <div className="text-lg sm:text-2xl font-bold text-orange-600">
-                        {Math.round((challenge.daysCompleted.length / challenge.totalDays) * 100)}%
+                        {Math.round(((challenge.daysCompleted || []).length / (challenge.totalDays || 21)) * 100)}%
                       </div>
                       <div className="text-xs text-orange-500 font-semibold">
                         Complete
@@ -571,13 +604,13 @@ function ColdblitzPage() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold text-white">Progress</span>
                       <span className="text-sm text-gray-400">
-                        {challenge.daysCompleted.length} of {challenge.totalDays} days
+                        {(challenge.daysCompleted || []).length} of {challenge.totalDays || 21} days
                       </span>
                     </div>
                     <div className="w-full bg-gradient-to-r from-slate-200 to-slate-300 rounded-full h-3 progress-glow">
                       <div 
                         className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                        style={{ width: `${(challenge.daysCompleted.length / challenge.totalDays) * 100}%` }}
+                        style={{ width: `${((challenge.daysCompleted || []).length / (challenge.totalDays || 21)) * 100}%` }}
                       >
                         <div className="absolute inset-0 shimmer"></div>
                       </div>
@@ -591,11 +624,11 @@ function ColdblitzPage() {
                       <button 
                         className={`btn-forge btn-success-forge flex-1 ${
                           loadingStates[`challenge_${challenge.id}`] ? 'btn-loading-forge' : ''
-                        } ${challenge.currentDay > challenge.totalDays ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${isChallengeCompleted(challenge) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={() => handleCompleteDay(challenge.id)}
-                        disabled={loadingStates[`challenge_${challenge.id}`] || challenge.currentDay > challenge.totalDays}
+                        disabled={loadingStates[`challenge_${challenge.id}`] || isChallengeCompleted(challenge)}
                       >
-                        {challenge.currentDay > challenge.totalDays ? (
+                        {isChallengeCompleted(challenge) ? (
                           <>🎉 Challenge Complete!</>
                         ) : (
                           <>✨ Complete Day {challenge.currentDay}</>
@@ -616,7 +649,7 @@ function ColdblitzPage() {
                     </div>
 
                     {/* Convert to Habit Button (shows only for completed challenges) */}
-                    {challenge.currentDay > challenge.totalDays && !challenge.isConverted && (
+                    {isChallengeCompleted(challenge) && !challenge.isConverted && (
                       <button 
                         className={`btn-forge btn-primary-forge btn-full-forge mt-3 ${
                           loadingStates[`convert_${challenge.id}`] ? 'btn-loading-forge' : ''
