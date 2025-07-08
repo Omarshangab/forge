@@ -49,9 +49,8 @@ function HomePage() {
     // Calculate challenge progress with proper null safety
     const totalChallengeProgress = challenges.length > 0 ? 
       challenges.reduce((total, challenge) => {
-        const totalDays = challenge.totalDays || 21;
-        const completedDays = (challenge.daysCompleted || []).length;
-        return total + (completedDays / totalDays) * 100;
+        const currentStreak = challenge.currentStreak || 0;
+        return total + (currentStreak / 21) * 100;
       }, 0) / challenges.length : 0;
     
     // Calculate weekly habits progress with null safety
@@ -81,9 +80,8 @@ function HomePage() {
 
   // Safe challenge progress calculation
   const calculateChallengeProgress = useCallback((challenge) => {
-    const totalDays = challenge.totalDays || 21;
-    const completedDays = (challenge.daysCompleted || []).length;
-    return Math.min((completedDays / totalDays) * 100, 100);
+    const currentStreak = challenge.currentStreak || 0;
+    return Math.min((currentStreak / 21) * 100, 100);
   }, []);
 
   // Safe display functions
@@ -482,7 +480,7 @@ function HomePage() {
                           </span>
                         </div>
                         <div className="text-sm text-orange-600 font-bold">
-                          Day {challenge.currentDay || 1}/{challenge.totalDays || 21}
+                          {challenge.currentStreak || 0}/21 days
                         </div>
                       </div>
                     );
@@ -584,7 +582,7 @@ function HomePage() {
                             ></div>
                           </div>
                           <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                            {(challenge.daysCompleted || []).length}/{challenge.totalDays || 21}
+                            {challenge.currentStreak || 0}/21
                           </span>
                         </div>
                       </div>

@@ -361,39 +361,13 @@ function HabitsPage() {
   }, [challenges]);
 
   // Calculate contribution statistics
-  const calculateContributionStats = useCallback((contributions) => {
+  const calculateContributionStats = useCallback((contributions, habit) => {
     const allDays = contributions.flat().filter(day => !day.isFuture && !day.isBeforeHabitStart);
     const completedDays = allDays.filter(day => day.completed);
-    const completionRate = allDays.length > 0 ? Math.round((completedDays.length / allDays.length) * 100) : 0;
     
-    // Calculate current streak (consecutive days from today backwards)
-    let currentStreak = 0;
-    const today = new Date();
-    const sortedDays = allDays.sort((a, b) => b.date - a.date); // Most recent first
-    
-    for (let day of sortedDays) {
-      if (day.date <= today && day.completed) {
-        currentStreak++;
-      } else if (day.date <= today) {
-        break;
-      }
-    }
-    
-    // Calculate longest streak
-    let longestStreak = 0;
-    let tempStreak = 0;
-    const chronologicalDays = allDays.sort((a, b) => a.date - b.date); // Oldest first
-    
-    chronologicalDays.forEach(day => {
-      if (day.completed) {
-        tempStreak++;
-        longestStreak = Math.max(longestStreak, tempStreak);
-      } else {
-        tempStreak = 0;
-      }
-    });
-    
-    return { completionRate, currentStreak, longestStreak, totalCompleted: completedDays.length };
+    return { 
+      totalCompleted: completedDays.length
+    };
   }, []);
 
   // Scroll to today function
@@ -412,9 +386,9 @@ function HabitsPage() {
   }, []);
 
   // Render contributions graph
-  const renderContributionsGraph = useCallback((habit) => {
+  const renderContributionsGraph = (habit) => {
     const contributions = generateContributionsData(habit);
-    const stats = calculateContributionStats(contributions);
+    const stats = calculateContributionStats(contributions, habit);
     
     return (
       <div className="mb-6">
@@ -526,27 +500,37 @@ function HabitsPage() {
         </div>
 
         {/* Contribution Statistics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
-          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-green-600">{stats.completionRate}%</div>
-                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Completion<br className="sm:hidden" /> Rate</div>
-          </div>
-          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-blue-600">{stats.currentStreak}</div>
-                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Current<br className="sm:hidden" /> Streak</div>
-          </div>
-          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-purple-600">{stats.longestStreak}</div>
-                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Longest<br className="sm:hidden" /> Streak</div>
-          </div>
-          <div className="bg-base-100 rounded-lg p-2.5 sm:p-3 text-center border border-base-300 hover:shadow-md transition-shadow">
-            <div className="text-base sm:text-lg font-bold text-orange-600">{stats.totalCompleted}</div>
-                            <div className="text-[10px] sm:text-xs text-gray-400 leading-tight">Total<br className="sm:hidden" /> Days</div>
+        <div className="flex justify-center mt-6">
+          <div className="group relative">
+            {/* Background glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+            
+            {/* Main card */}
+            <div className="relative bg-gradient-to-br from-white to-orange-50 dark:from-slate-800 dark:to-slate-700 rounded-2xl p-6 sm:p-8 text-center border border-orange-200 dark:border-slate-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 min-w-[160px]">
+              {/* Icon */}
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-bold">📊</span>
+              </div>
+              
+              {/* Number */}
+              <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-2">
+                {stats.totalCompleted}
+              </div>
+              
+              {/* Label */}
+              <div className="text-sm sm:text-base text-gray-600 dark:text-slate-300 font-semibold tracking-wide">
+                Total Days Completed
+              </div>
+              
+              {/* Decorative elements */}
+              <div className="absolute top-2 right-2 w-2 h-2 bg-orange-400 rounded-full opacity-60"></div>
+              <div className="absolute bottom-2 left-2 w-1 h-1 bg-amber-400 rounded-full opacity-40"></div>
+            </div>
           </div>
         </div>
       </div>
     );
-  }, [generateContributionsData, calculateContributionStats, scrollToToday]);
+  };
 
   return (
     <div className="min-h-screen bg-base-200 transition-colors duration-500">
@@ -854,16 +838,40 @@ function HabitsPage() {
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold text-white">Weekly Progress</span>
-                      <span className="text-sm text-gray-400">
-                        {habit.completed || 0} of {habit.weeklyGoal || 0} completed
+                      <span className={`text-sm font-semibold ${
+                        (habit.completed || 0) > (habit.weeklyGoal || 0) 
+                          ? 'text-purple-400' 
+                          : (habit.completed || 0) >= (habit.weeklyGoal || 0)
+                          ? 'text-green-400'
+                          : 'text-gray-400'
+                      }`}>
+                        {(habit.completed || 0) > (habit.weeklyGoal || 0) 
+                          ? `${habit.completed || 0} completed (+${(habit.completed || 0) - (habit.weeklyGoal || 0)} extra!)`
+                          : (habit.completed || 0) >= (habit.weeklyGoal || 0)
+                          ? `${habit.completed || 0} of ${habit.weeklyGoal || 0} completed - Goal Achieved! 🎯`
+                          : `${habit.completed || 0} of ${habit.weeklyGoal || 0} completed`
+                        }
                       </span>
                     </div>
                     <div className="w-full bg-gradient-to-r from-slate-200 to-slate-300 rounded-full h-3 progress-glow">
                       <div 
-                        className={`bg-gradient-to-r ${colors[habit.color?.replace('bg-', '').replace('-500', '') || 'purple']} h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden`}
-                        style={{ width: `${calculateProgress(habit.completed || 0, habit.weeklyGoal || 1)}%` }}
+                        className={`bg-gradient-to-r ${
+                          (habit.completed || 0) > (habit.weeklyGoal || 0)
+                            ? 'from-purple-500 to-indigo-500'
+                            : colors[habit.color?.replace('bg-', '').replace('-500', '') || 'purple']
+                        } h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden`}
+                        style={{ 
+                          width: `${
+                            (habit.completed || 0) > (habit.weeklyGoal || 0) 
+                              ? Math.min(100 + ((habit.completed - habit.weeklyGoal) * 10), 120)
+                              : calculateProgress(habit.completed || 0, habit.weeklyGoal || 1)
+                          }%` 
+                        }}
                       >
                         <div className="absolute inset-0 shimmer"></div>
+                        {(habit.completed || 0) > (habit.weeklyGoal || 0) && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-400/30 to-indigo-400/30 animate-pulse"></div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -872,14 +880,22 @@ function HabitsPage() {
                   {renderContributionsGraph(habit)}
 
                   <button 
-                    className={`btn-forge btn-dark-forge btn-full-forge ${
+                    className={`btn-full-forge ${
                       loadingStates[habit.id] ? 'btn-loading-forge' : ''
-                    } ${(habit.completed || 0) >= (habit.weeklyGoal || 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${
+                      (habit.completed || 0) > (habit.weeklyGoal || 0) 
+                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105'
+                        : (habit.completed || 0) >= (habit.weeklyGoal || 0)
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl'
+                        : 'btn-forge btn-dark-forge'
+                    }`}
                     onClick={() => handleCompleteHabit(habit.id)}
-                    disabled={loadingStates[habit.id] || (habit.completed || 0) >= (habit.weeklyGoal || 0)}
+                    disabled={loadingStates[habit.id]}
                   >
-                    {(habit.completed || 0) >= (habit.weeklyGoal || 0) ? (
-                      <>🎯 Week Goal Achieved!</>
+                    {(habit.completed || 0) > (habit.weeklyGoal || 0) ? (
+                      <>⭐ Extra Credit</>
+                    ) : (habit.completed || 0) >= (habit.weeklyGoal || 0) ? (
+                      <>🎯 Continue Streak</>
                     ) : (
                       <>✓ Mark Complete</>
                     )}

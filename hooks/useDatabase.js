@@ -267,7 +267,8 @@ export const useDatabase = () => {
         return completionDate && completionDate >= weekStart && completionDate <= weekEnd;
       }).length;
 
-      const newCompleted = Math.min(thisWeekCompletions + 1, habit.weeklyGoal);
+      // Allow extra credit - don't cap at weekly goal
+      const newCompleted = thisWeekCompletions + 1;
       
       // Calculate week streak - simplified and more reliable
       const weekStreak = calculateWeekStreak(habit, [...existingCompletions, todayString]);
@@ -397,6 +398,63 @@ export const useDatabase = () => {
     }
   };
 
+  // Helper function to check if we have N consecutive days completed
+  const checkConsecutiveDays = (completionDates, requiredDays) => {
+    if (completionDates.length < requiredDays) return false;
+    
+    const today = new Date();
+    const sortedDates = completionDates.map(dateStr => {
+      const parsed = parseCompletionDate(dateStr);
+      return parsed ? parsed : new Date(dateStr + 'T00:00:00');
+    }).sort((a, b) => b - a); // Most recent first
+    
+    // Check last N days for consecutive completions
+    for (let i = 0; i < requiredDays; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      const checkDateString = getLocalDateString(checkDate);
+      
+      const hasCompletion = sortedDates.some(date => 
+        getLocalDateString(date) === checkDateString
+      );
+      
+      if (!hasCompletion) {
+        return false; // Gap found, not consecutive
+      }
+    }
+    
+    return true; // All consecutive days completed
+  };
+
+  // Helper function to calculate current streak
+  const calculateCurrentStreak = (completionDates) => {
+    if (!completionDates.length) return 0;
+    
+    const today = new Date();
+    let streak = 0;
+    
+    // Check backwards from today
+    for (let i = 0; i < 365; i++) { // Max check 1 year
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      const checkDateString = getLocalDateString(checkDate);
+      
+      const hasCompletion = completionDates.some(dateStr => {
+        const parsed = parseCompletionDate(dateStr);
+        const date = parsed ? parsed : new Date(dateStr + 'T00:00:00');
+        return getLocalDateString(date) === checkDateString;
+      });
+      
+      if (hasCompletion) {
+        streak++;
+      } else {
+        break; // Streak broken
+      }
+    }
+    
+    return streak;
+  };
+
   const completeDay = async (challengeId) => {
     if (!user) throw new Error('User not authenticated');
     if (!challengeId) throw new Error('Challenge ID is required');
@@ -427,19 +485,18 @@ export const useDatabase = () => {
         throw new Error('You already completed this challenge today!');
       }
       
-      // Fix: Add the current day to completed days, then increment
-      const dayToComplete = challenge.currentDay;
-      const newDaysCompleted = [...(challenge.daysCompleted || []), dayToComplete];
+      // Add today's completion date
       const newCompletionDates = [...existingCompletions, todayString];
-      const newCurrentDay = Math.min(dayToComplete + 1, challenge.totalDays + 1);
       
-      // Fix: Challenge is completed when we have 21 completed days
-      const isCompleted = newDaysCompleted.length >= challenge.totalDays;
+      // Check for 21 consecutive days (not just 21 total days)
+      const isCompleted = checkConsecutiveDays(newCompletionDates, 21);
+      
+      // Calculate current streak (consecutive days from today backwards)
+      const currentStreak = calculateCurrentStreak(newCompletionDates);
       
       await updateChallenge(challengeId, {
-        currentDay: newCurrentDay,
-        daysCompleted: newDaysCompleted,
         completionDates: newCompletionDates,
+        currentStreak: currentStreak,
         lastCompletedAt: serverTimestamp(),
         isActive: !isCompleted,
         isCompleted: isCompleted

@@ -180,18 +180,17 @@ function ColdblitzPage() {
       const challenge = challenges.find(c => c.id === challengeId);
       if (!challenge) throw new Error('Challenge not found');
 
-      // The current day that will be completed
-      const dayToComplete = challenge.currentDay;
-      
       // Complete the day
       await completeDay(challengeId);
 
-      // Show success message based on the day that was just completed
-      const daysRemaining = 21 - dayToComplete;
-      if (dayToComplete === 21) {
+      // Show success message based on the new streak
+      const currentStreak = (challenge.currentStreak || 0) + 1;
+      const daysRemaining = 21 - currentStreak;
+      
+      if (currentStreak >= 21) {
         success(`🎉 Challenge completed! You did it for 21 days straight!`);
       } else {
-        success(`💪 Day ${dayToComplete} completed! ${daysRemaining} days to go!`);
+        success(`💪 Day ${currentStreak} streak! ${daysRemaining} more days to go!`);
       }
 
       // Note: Auto-conversion to habit is now handled in the database hook
@@ -247,18 +246,19 @@ function ColdblitzPage() {
     }
   }, [loadingStates, dbConvertChallengeToHabit, success, showError]);
 
-  // Fixed day grid rendering
+  // Day grid rendering based on current streak
   const renderDayGrid = useCallback((challenge) => {
     const days = Array.from({ length: 21 }, (_, i) => i + 1);
+    const currentStreak = challenge.currentStreak || 0;
     
     return (
       <div className="grid grid-cols-7 gap-2 sm:gap-3">
         {days.map(day => {
-          // Fix: Check if this day number is in the completed days array
-          const isCompleted = (challenge.daysCompleted || []).includes(day);
-          // Fix: Current day is the next day to be completed
-          const isCurrent = day === challenge.currentDay && !isCompleted;
-          const isUpcoming = day > challenge.currentDay || (day === challenge.currentDay && isCompleted);
+          // Day is completed if it's within the current streak
+          const isCompleted = day <= currentStreak;
+          // Current day is the next day to be completed
+          const isCurrent = day === currentStreak + 1 && currentStreak < 21;
+          const isUpcoming = day > currentStreak + 1;
           
           return (
             <div
@@ -277,14 +277,13 @@ function ColdblitzPage() {
     );
   }, []);
 
-  // Fixed progress calculation
+  // Progress calculation based on current streak
   const calculateAverageProgress = useCallback(() => {
     if (challenges.length === 0) return 0;
     
     const totalProgress = challenges.reduce((total, challenge) => {
-      const totalDays = challenge.totalDays || 21;
-      const completedDays = (challenge.daysCompleted || []).length;
-      return total + (completedDays / totalDays) * 100;
+      const currentStreak = challenge.currentStreak || 0;
+      return total + (currentStreak / 21) * 100;
     }, 0);
     
     return Math.round(totalProgress / challenges.length);
@@ -292,15 +291,13 @@ function ColdblitzPage() {
 
   const calculateTotalDaysCompleted = useCallback(() => {
     return challenges.reduce((total, challenge) => {
-      return total + ((challenge.daysCompleted || []).length);
+      return total + (challenge.currentStreak || 0);
     }, 0);
   }, [challenges]);
 
-  // Fixed challenge completion check
+  // Challenge completion check based on 21 consecutive days
   const isChallengeCompleted = useCallback((challenge) => {
-    const totalDays = challenge.totalDays || 21;
-    const completedDays = (challenge.daysCompleted || []).length;
-    return completedDays >= totalDays;
+    return challenge.isCompleted || (challenge.currentStreak >= 21);
   }, []);
 
   const resetChallengeForm = useCallback(() => {
@@ -592,7 +589,7 @@ function ColdblitzPage() {
                     </div>
                     <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 min-w-[70px] sm:min-w-[80px]">
                       <div className="text-lg sm:text-2xl font-bold text-orange-600">
-                        {Math.round(((challenge.daysCompleted || []).length / (challenge.totalDays || 21)) * 100)}%
+                        {Math.round(((challenge.currentStreak || 0) / 21) * 100)}%
                       </div>
                       <div className="text-xs text-orange-500 font-semibold">
                         Complete
@@ -604,13 +601,13 @@ function ColdblitzPage() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold text-white">Progress</span>
                       <span className="text-sm text-gray-400">
-                        {(challenge.daysCompleted || []).length} of {challenge.totalDays || 21} days
+                        {challenge.currentStreak || 0} consecutive days ({21 - (challenge.currentStreak || 0)} remaining)
                       </span>
                     </div>
                     <div className="w-full bg-gradient-to-r from-slate-200 to-slate-300 rounded-full h-3 progress-glow">
                       <div 
                         className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                        style={{ width: `${((challenge.daysCompleted || []).length / (challenge.totalDays || 21)) * 100}%` }}
+                        style={{ width: `${((challenge.currentStreak || 0) / 21) * 100}%` }}
                       >
                         <div className="absolute inset-0 shimmer"></div>
                       </div>
@@ -631,7 +628,7 @@ function ColdblitzPage() {
                         {isChallengeCompleted(challenge) ? (
                           <>🎉 Challenge Complete!</>
                         ) : (
-                          <>✨ Complete Day {challenge.currentDay}</>
+                          <>✨ Complete Day {(challenge.currentStreak || 0) + 1}</>
                         )}
                       </button>
                       
