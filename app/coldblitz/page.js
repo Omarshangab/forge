@@ -89,7 +89,8 @@ function ColdblitzPage() {
         description: customChallenge.description,
         reward: customChallenge.reward,
         icon: customChallenge.icon,
-        category: customChallenge.category
+        category: customChallenge.category,
+        totalDays: 21
       };
       
       await addChallenge(challengeData);
