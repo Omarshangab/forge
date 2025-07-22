@@ -322,22 +322,22 @@ function ColdblitzPage() {
           {/* Mobile Layout */}
           <div className="sm:hidden">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Image
                   src="/forge-logo.png"
                   alt="Forge Logo"
                   width={48}
                   height={48}
-                  className="w-12 h-12 object-contain float-animation"
+                  className="w-12 h-12 object-contain float-animation flex-shrink-0"
                 />
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent truncate">
                     Coldblitz
                   </h1>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {/* Mobile User Profile */}
                 <div className="relative mobile-profile-container">
                   <button
@@ -349,9 +349,9 @@ function ColdblitzPage() {
                       alt="Profile"
                       width={32}
                       height={32}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     />
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-sm font-medium text-white truncate max-w-[60px]">
                       {user?.displayName?.split(' ')[0] || 'User'}
                     </span>
                   </button>
@@ -375,22 +375,22 @@ function ColdblitzPage() {
             </div>
             
             {/* Mobile Stats Bar */}
-            <div className="flex items-center justify-between glass rounded-xl p-3 mb-2">
-              <div className="text-center">
+            <div className="flex items-center justify-between glass rounded-xl p-3 mb-2 gap-2">
+              <div className="text-center flex-1 min-w-0">
                 <div className="text-xl font-bold text-orange-300">
                   {calculateAverageProgress()}%
                 </div>
-                <div className="text-xs text-slate-300">Progress</div>
+                <div className="text-xs text-slate-300 truncate">Progress</div>
               </div>
-              <div className="text-center">
+              <div className="text-center flex-1 min-w-0">
                 <div className="text-xl font-bold text-red-300">
                   {calculateTotalDaysCompleted()}
                 </div>
-                <div className="text-xs text-slate-300">Days Done</div>
+                <div className="text-xs text-slate-300 truncate">Days Done</div>
               </div>
-              <div className="text-center">
+              <div className="text-center flex-1 min-w-0">
                 <div className="text-xl font-bold text-amber-300">{challenges.length}</div>
-                <div className="text-xs text-slate-300">Active</div>
+                <div className="text-xs text-slate-300 truncate">Active</div>
               </div>
             </div>
             
@@ -572,23 +572,23 @@ function ColdblitzPage() {
             <div className="space-y-4 sm:space-y-6">
               {challenges.map(challenge => (
                 <div key={challenge.id} className="glass rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-premium card-interactive">
-                  <div className="flex items-start justify-between mb-4 sm:mb-6">
-                    <div className="flex-1">
+                  <div className="flex items-start justify-between mb-4 sm:mb-6 gap-3">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                        <span className="text-xl sm:text-2xl">
+                        <span className="text-xl sm:text-2xl flex-shrink-0">
                           {challenge.icon || challenge.name.split(' ')[0]}
                         </span>
-                        <h3 className="text-base sm:text-xl font-bold text-white">
+                        <h3 className="text-base sm:text-xl font-bold text-white truncate">
                           {challenge.name.includes(' ') ? challenge.name.substring(challenge.name.indexOf(' ') + 1) : challenge.name}
                         </h3>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-400 mb-1">{challenge.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mb-1 break-words">{challenge.description}</p>
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-purple-600 font-semibold">
-                        <GiTrophyCup className="text-sm sm:text-base" />
-                        <span>{challenge.reward}</span>
+                        <GiTrophyCup className="text-sm sm:text-base flex-shrink-0" />
+                        <span className="truncate">{challenge.reward}</span>
                       </div>
                     </div>
-                    <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 min-w-[70px] sm:min-w-[80px]">
+                    <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 min-w-[70px] sm:min-w-[80px] flex-shrink-0">
                       <div className="text-lg sm:text-2xl font-bold text-orange-600">
                         {Math.round(((challenge.currentStreak || 0) / 21) * 100)}%
                       </div>
@@ -599,7 +599,7 @@ function ColdblitzPage() {
                   </div>
 
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                       <span className="text-sm font-semibold text-white">Progress</span>
                       <span className="text-sm text-gray-400">
                         {challenge.currentStreak || 0} consecutive days ({21 - (challenge.currentStreak || 0)} remaining)
@@ -620,22 +620,24 @@ function ColdblitzPage() {
                   <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex gap-3">
                       <button 
-                        className={`btn-forge btn-success-forge flex-1 ${
+                        className={`btn-forge btn-success-forge flex-1 min-w-0 ${
                           loadingStates[`challenge_${challenge.id}`] ? 'btn-loading-forge' : ''
                         } ${isChallengeCompleted(challenge) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={() => handleCompleteDay(challenge.id)}
                         disabled={loadingStates[`challenge_${challenge.id}`] || isChallengeCompleted(challenge)}
                       >
-                        {isChallengeCompleted(challenge) ? (
-                          <>🎉 Challenge Complete!</>
-                        ) : (
-                          <>✨ Complete Day {(challenge.currentStreak || 0) + 1}</>
-                        )}
+                        <span className="truncate">
+                          {isChallengeCompleted(challenge) ? (
+                            <>🎉 Challenge Complete!</>
+                          ) : (
+                            <>✨ Complete Day {(challenge.currentStreak || 0) + 1}</>
+                          )}
+                        </span>
                       </button>
                       
                       {/* Archive Button */}
                       <button 
-                        className={`btn-forge btn-outline-forge px-4 ${
+                        className={`btn-forge btn-outline-forge px-4 flex-shrink-0 ${
                           loadingStates[`archive_${challenge.id}`] ? 'btn-loading-forge' : ''
                         }`}
                         onClick={() => handleArchiveChallenge(challenge.id)}
@@ -655,7 +657,7 @@ function ColdblitzPage() {
                         onClick={() => handleConvertToHabit(challenge.id)}
                         disabled={loadingStates[`convert_${challenge.id}`]}
                       >
-                        🔄 Convert to Weekly Habit
+                        <span className="truncate">🔄 Convert to Weekly Habit</span>
                       </button>
                     )}
                   </div>
