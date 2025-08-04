@@ -13,6 +13,14 @@ that was an example but it goes to show me how powerful tracking your habits cou
 
 Now as far as project ive already built out my styling with tailwindcss. but if we need a backend lets use firebase, as its the one im most familiar with.
 
+## Setup Instructions
+
+1. Create a Firebase project at https://console.firebase.google.com/
+2. Enable Authentication with Google provider
+3. Create a Firestore database
+4. Copy your Firebase config to `.env.local` (see `.env.local` for required variables)
+5. Run `npm install` and `npm run dev`
+
 Alright for the coldblitz section, let me tell you what it is first. its basically a challenge that you do a certain habit for 21 days straight. and at the end of the 21 days if you complete it you get a reward that you choosed at the begin of the challenge. on of the biggest thing is the ability to see that daily streak go up and gain a sense of progress. i want you to recreate this better than how i described but withh the same underlying principle. if you need to use a backend let me know so we can set up firebase.
 
 We’ll use javascript for language, react/next.js. and I’ll be using Vercel to host. 
