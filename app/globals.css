@@ -822,3 +822,49 @@ input:focus-visible {
 /* ========================================
    ENHANCED BUTTON SYSTEM ADDITIONS
 ======================================== */
+
+/* ========================================
+   DUOLINGO-LIKE CELEBRATION ANIMATIONS
+======================================== */
+
+@keyframes celebration-float {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-70px) scale(0.4) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+.celebration-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: celebration-float 1.2s ease-out forwards;
+  font-size: 1.25rem;
+  z-index: 10;
+  bottom: 50%;
+}
+
+@keyframes card-celebrate {
+  0%, 100% { transform: scale(1); }
+  15%       { transform: scale(1.03); }
+  40%       { transform: scale(0.98); }
+  60%       { transform: scale(1.015); }
+}
+
+.card-celebrating {
+  animation: card-celebrate 0.55s ease-out;
+}
+
+/* Streak hero pulse */
+@keyframes streak-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.12); }
+}
+
+.streak-hero-flame {
+  display: inline-block;
+  animation: streak-pulse 2.4s ease-in-out infinite;
+}

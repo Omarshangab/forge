@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -71,23 +71,10 @@ function HomePage() {
     };
   }, [habits, challenges]);
 
-  // Safe habit progress calculation
-  const calculateHabitProgress = useCallback((habit) => {
-    const completed = habit.completed || 0;
-    const weeklyGoal = habit.weeklyGoal || 1; // Prevent division by zero
-    return Math.min((completed / weeklyGoal) * 100, 100);
-  }, []);
-
-  // Safe challenge progress calculation
-  const calculateChallengeProgress = useCallback((challenge) => {
-    const currentStreak = challenge.currentStreak || 0;
-    return Math.min((currentStreak / 21) * 100, 100);
-  }, []);
-
   // Safe display functions
-  const getDisplayName = useCallback(() => {
+  const getDisplayName = () => {
     return user?.displayName?.split(' ')[0] || 'User';
-  }, [user]);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-500">
@@ -336,18 +323,6 @@ function HomePage() {
 
       <div className="container mx-auto px-4 py-6 sm:py-12 space-y-8 sm:space-y-16">
         
-        {/* Mobile-Optimized Welcome Section */}
-        <section className="text-center">
-          <div className="max-w-4xl mx-auto">
-                    <h2 className="text-2xl sm:text-5xl font-bold text-white mb-3 sm:mb-6 flex items-center justify-center gap-2 sm:gap-4">
-          Ready to build? <GiHeartWings className="text-purple-600 text-2xl sm:text-5xl" />
-        </h2>
-        <p className="text-base sm:text-2xl text-gray-400 leading-relaxed max-w-3xl mx-auto">
-              Continue building your habits and completing your challenges. Every day counts towards your transformation!
-            </p>
-          </div>
-        </section>
-
         {/* Stats Overview */}
         <section>
                   <h3 className="text-xl sm:text-3xl font-bold text-white mb-4 sm:mb-8 flex items-center justify-center gap-2 sm:gap-3">
@@ -433,7 +408,7 @@ function HomePage() {
                           </span>
                         </div>
                         <div className="text-sm text-purple-600 font-bold">
-                          {habit.completed || 0}/{habit.weeklyGoal || 0}
+                          {habit.weeklyGoal || 0}x/wk
                         </div>
                       </div>
                     );
@@ -501,106 +476,6 @@ function HomePage() {
                 </div>
               </div>
             </Link>
-          </div>
-        </section>
-
-        {/* Today's Focus */}
-        <section>
-          <h3 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4 sm:mb-8 flex items-center justify-center gap-2 sm:gap-3">
-            <GiBullseye className="text-purple-600 text-xl sm:text-3xl" />
-            Today's Focus
-          </h3>
-          <div className="glass rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-premium">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-              
-              {/* Habits to Complete */}
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
-                  <GiBullseye className="text-purple-600" />
-                  Habits for This Week
-                </h4>
-                <div className="space-y-3">
-                  {habits.length > 0 ? habits.map(habit => {
-                    const HabitIcon = getHabitIcon(habit.name);
-                    return (
-                      <div key={habit.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg sm:rounded-xl">
-                        <div className="flex items-center gap-2">
-                          <HabitIcon className="text-purple-600 text-sm sm:text-base" />
-                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {habit.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <div className="w-12 sm:w-16 bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 sm:h-2">
-                            <div 
-                              className="h-1.5 sm:h-2 bg-purple-500 rounded-full transition-all duration-300"
-                              style={{ width: `${calculateHabitProgress(habit)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                            {habit.completed || 0}/{habit.weeklyGoal || 0}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <div className="text-center py-8">
-                      <GiBullseye className="text-4xl text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                        No habits yet
-                      </p>
-                      <Link href="/habits" className="text-xs text-purple-600 hover:text-purple-700 font-medium">
-                        Create your first habit →
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Challenges to Complete */}
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
-                  <GiFlame className="text-orange-600" />
-                  Active Challenges
-                </h4>
-                <div className="space-y-3">
-                  {challenges.length > 0 ? challenges.map(challenge => {
-                    const ChallengeIcon = getHabitIcon(challenge.name);
-                    return (
-                      <div key={challenge.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg sm:rounded-xl">
-                        <div className="flex items-center gap-2">
-                          <ChallengeIcon className="text-orange-600 text-sm sm:text-base" />
-                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {challenge.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <div className="w-12 sm:w-16 bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 sm:h-2">
-                            <div 
-                              className="h-1.5 sm:h-2 bg-orange-500 rounded-full transition-all duration-300"
-                              style={{ width: `${calculateChallengeProgress(challenge)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                            {challenge.currentStreak || 0}/21
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <div className="text-center py-8">
-                      <GiFlame className="text-4xl text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                        No challenges yet
-                      </p>
-                      <Link href="/coldblitz" className="text-xs text-orange-600 hover:text-orange-700 font-medium">
-                        Start your first challenge →
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
