@@ -72,29 +72,13 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      // Try popup first
-      const result = await signInWithPopup(auth, googleProvider);
-      return result;
+      console.log('Starting Google authentication with redirect...');
+      await signInWithRedirect(auth, googleProvider);
+      // The result will be handled by getRedirectResult in useEffect
+      return null;
     } catch (error) {
-      console.error('Popup login error:', error);
-      
-      // If popup is blocked or fails, try redirect
-      if (error.code === 'auth/popup-blocked' || 
-          error.code === 'auth/popup-closed-by-user' ||
-          error.code === 'auth/cancelled-popup-request') {
-        
-        console.log('Popup blocked, trying redirect...');
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          // The result will be handled by getRedirectResult in useEffect
-          return null;
-        } catch (redirectError) {
-          console.error('Redirect login error:', redirectError);
-          throw redirectError;
-        }
-      } else {
-        throw error;
-      }
+      console.error('Redirect login error:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -124,4 +108,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};    
